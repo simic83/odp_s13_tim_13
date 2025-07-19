@@ -5,7 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 
 export const Auth: React.FC = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  const [isActive, setIsActive] = useState(false);
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -13,195 +13,296 @@ export const Auth: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [activeField, setActiveField] = useState('');
 
   const { login, register } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
-    if (!isLogin && password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
     setLoading(true);
 
-    const result = isLogin
-      ? await login({ email, password })
-      : await register({ username, email, password });
+    const result = await login({ email, password });
 
     if (result.success) {
       navigate('/');
     } else {
-      setError(result.error || 'Authentication failed');
+      setError(result.error || 'Login failed');
+    }
+    setLoading(false);
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
     }
 
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+
+    setLoading(true);
+    const result = await register({ username, email, password });
+
+    if (result.success) {
+      setIsActive(false);
+      setError('');
+      setPassword('');
+      setConfirmPassword('');
+      setTimeout(() => {
+        setError('Registration successful! Please login.');
+      }, 100);
+    } else {
+      setError(result.error || 'Registration failed');
+    }
     setLoading(false);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="w-full max-w-md mx-auto px-4">
-        <div className="relative bg-white rounded-3xl shadow-2xl overflow-hidden">
-          {/* Background decoration */}
-          <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full -mr-20 -mt-20 opacity-50" />
-          <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-gray-100 to-gray-200 rounded-full -ml-16 -mb-16 opacity-50" />
-          
-          {/* Sliding container */}
-          <div className="relative flex transition-transform duration-700 ease-in-out" style={{ transform: isLogin ? 'translateX(0)' : 'translateX(-100%)' }}>
-            {/* Login Form */}
-            <div className="w-full flex-shrink-0 p-8">
-              <h2 className="text-3xl font-bold text-gray-800 mb-2">Welcome Back</h2>
-              <p className="text-gray-600 mb-8">Log in to discover amazing ideas</p>
-
-              <form onSubmit={handleSubmit} className="space-y-5">
-                {error && isLogin && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg animate-shake">
-                    {error}
-                  </div>
-                )}
-
-                {/* Email Field */}
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:border-gray-800 focus:outline-none transition-all"
-                    placeholder="Email address"
-                  />
-                </div>
-
-                {/* Password Field */}
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="w-full pl-10 pr-12 py-3 border-2 border-gray-300 rounded-lg focus:border-gray-800 focus:outline-none transition-all"
-                    placeholder="Password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading || !isLogin}
-                  className="w-full py-3 bg-gray-900 text-white rounded-lg font-semibold hover:bg-gray-800 transition-all duration-300 disabled:opacity-50"
-                >
-                  {loading && isLogin ? <LoadingSpinner size="sm" /> : 'Log In'}
-                </button>
-              </form>
-
-              <div className="mt-6 text-center">
-                <p className="text-gray-600">
-                  Don't have an account?{' '}
-                  <button
-                    onClick={() => setIsLogin(false)}
-                    className="text-gray-900 hover:text-gray-700 font-semibold"
-                  >
-                    Sign Up
-                  </button>
-                </p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+      <div className="relative bg-white rounded-[30px] shadow-[0_5px_15px_rgba(0,0,0,0.35)] overflow-hidden w-[768px] max-w-full min-h-[520px]">
+        {/* Sign Up Form */}
+        <div className={`absolute top-0 h-full transition-all duration-[600ms] ease-in-out w-1/2 ${
+          isActive 
+            ? 'translate-x-full opacity-100 z-[5] animate-slideIn' 
+            : 'left-0 opacity-0 z-[1]'
+        }`}>
+          <form onSubmit={handleRegister} className="bg-white flex items-center justify-center flex-col px-10 h-full">
+            <h1 className="text-3xl font-bold text-gray-900 mb-6">Create Account</h1>
+            
+            {error && isActive && (
+              <div className="w-full bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-lg text-sm mb-4 animate-shake">
+                {error}
               </div>
+            )}
+
+            {/* Username Field */}
+            <div className="relative w-full mb-4">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none z-10" />
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                onFocus={() => setActiveField('username')}
+                onBlur={() => setActiveField('')}
+                required={isActive}
+                className="w-full pl-12 pr-4 pt-5 pb-2 border-2 border-gray-300 rounded-lg text-gray-900 bg-white placeholder-transparent focus:border-red-500 focus:outline-none transition-all"
+                placeholder="Username"
+              />
+              <label className={`absolute left-12 bg-white px-1 transition-all duration-200 pointer-events-none ${
+                activeField === 'username' || username
+                  ? 'top-0 -translate-y-1/2 text-xs text-red-500'
+                  : 'top-1/2 -translate-y-1/2 text-gray-400'
+              }`}>
+                Username
+              </label>
             </div>
 
-            {/* Register Form */}
-            <div className="w-full flex-shrink-0 p-8">
-              <h2 className="text-3xl font-bold text-gray-800 mb-2">Join Us</h2>
-              <p className="text-gray-600 mb-8">Create an account to get started</p>
+            {/* Email Field */}
+            <div className="relative w-full mb-4">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none z-10" />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onFocus={() => setActiveField('email2')}
+                onBlur={() => setActiveField('')}
+                required
+                className="w-full pl-12 pr-4 pt-5 pb-2 border-2 border-gray-300 rounded-lg text-gray-900 bg-white placeholder-transparent focus:border-red-500 focus:outline-none transition-all"
+                placeholder="Email"
+              />
+              <label className={`absolute left-12 bg-white px-1 transition-all duration-200 pointer-events-none ${
+                activeField === 'email2' || email
+                  ? 'top-0 -translate-y-1/2 text-xs text-red-500'
+                  : 'top-1/2 -translate-y-1/2 text-gray-400'
+              }`}>
+                Email address
+              </label>
+            </div>
 
-              <form onSubmit={handleSubmit} className="space-y-5">
-                {error && !isLogin && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg animate-shake">
-                    {error}
-                  </div>
-                )}
+            {/* Password Field */}
+            <div className="relative w-full mb-4">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none z-10" />
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onFocus={() => setActiveField('password2')}
+                onBlur={() => setActiveField('')}
+                required
+                className="w-full pl-12 pr-12 pt-5 pb-2 border-2 border-gray-300 rounded-lg text-gray-900 bg-white placeholder-transparent focus:border-red-500 focus:outline-none transition-all"
+                placeholder="Password"
+              />
+              <label className={`absolute left-12 bg-white px-1 transition-all duration-200 pointer-events-none ${
+                activeField === 'password2' || password
+                  ? 'top-0 -translate-y-1/2 text-xs text-red-500'
+                  : 'top-1/2 -translate-y-1/2 text-gray-400'
+              }`}>
+                Password
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
 
-                {/* Username Field */}
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    required={!isLogin}
-                    className="w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:border-gray-800 focus:outline-none transition-all"
-                    placeholder="Username"
-                  />
-                </div>
+            {/* Confirm Password Field */}
+            <div className="relative w-full mb-6">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none z-10" />
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                onFocus={() => setActiveField('confirmPassword')}
+                onBlur={() => setActiveField('')}
+                required={isActive}
+                className="w-full pl-12 pr-4 pt-5 pb-2 border-2 border-gray-300 rounded-lg text-gray-900 bg-white placeholder-transparent focus:border-red-500 focus:outline-none transition-all"
+                placeholder="Confirm Password"
+              />
+              <label className={`absolute left-12 bg-white px-1 transition-all duration-200 pointer-events-none ${
+                activeField === 'confirmPassword' || confirmPassword
+                  ? 'top-0 -translate-y-1/2 text-xs text-red-500'
+                  : 'top-1/2 -translate-y-1/2 text-gray-400'
+              }`}>
+                Confirm Password
+              </label>
+            </div>
 
-                {/* Email Field */}
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:border-gray-800 focus:outline-none transition-all"
-                    placeholder="Email address"
-                  />
-                </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold py-3 rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:transform-none"
+            >
+              {loading ? <LoadingSpinner size="sm" /> : 'Sign Up'}
+            </button>
+          </form>
+        </div>
 
-                {/* Password Field */}
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="w-full pl-10 pr-12 py-3 border-2 border-gray-300 rounded-lg focus:border-gray-800 focus:outline-none transition-all"
-                    placeholder="Password"
-                  />
-                </div>
-
-                {/* Confirm Password Field */}
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required={!isLogin}
-                    className="w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:border-gray-800 focus:outline-none transition-all"
-                    placeholder="Confirm Password"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading || isLogin}
-                  className="w-full py-3 bg-gray-900 text-white rounded-lg font-semibold hover:bg-gray-800 transition-all duration-300 disabled:opacity-50"
-                >
-                  {loading && !isLogin ? <LoadingSpinner size="sm" /> : 'Sign Up'}
-                </button>
-              </form>
-
-              <div className="mt-6 text-center">
-                <p className="text-gray-600">
-                  Already have an account?{' '}
-                  <button
-                    onClick={() => setIsLogin(true)}
-                    className="text-gray-900 hover:text-gray-700 font-semibold"
-                  >
-                    Log In
-                  </button>
-                </p>
+        {/* Sign In Form */}
+        <div className={`absolute top-0 h-full transition-all duration-[600ms] ease-in-out left-0 w-1/2 z-[2] ${
+          isActive ? 'translate-x-full' : ''
+        }`}>
+          <form onSubmit={handleLogin} className="bg-white flex items-center justify-center flex-col px-10 h-full">
+            <h1 className="text-3xl font-bold text-gray-900 mb-6">Sign In</h1>
+            
+            {error && !isActive && (
+              <div className={`w-full ${error.includes('successful') ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'} border px-4 py-2 rounded-lg text-sm mb-4 animate-fadeIn`}>
+                {error}
               </div>
+            )}
+
+            {/* Email Field */}
+            <div className="relative w-full mb-4">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none z-10" />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onFocus={() => setActiveField('email')}
+                onBlur={() => setActiveField('')}
+                required
+                className="w-full pl-12 pr-4 pt-5 pb-2 border-2 border-gray-300 rounded-lg text-gray-900 bg-white placeholder-transparent focus:border-red-500 focus:outline-none transition-all"
+                placeholder="Email"
+              />
+              <label className={`absolute left-12 bg-white px-1 transition-all duration-200 pointer-events-none ${
+                activeField === 'email' || email
+                  ? 'top-0 -translate-y-1/2 text-xs text-red-500'
+                  : 'top-1/2 -translate-y-1/2 text-gray-400'
+              }`}>
+                Email address
+              </label>
+            </div>
+
+            {/* Password Field */}
+            <div className="relative w-full mb-6">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none z-10" />
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onFocus={() => setActiveField('password')}
+                onBlur={() => setActiveField('')}
+                required
+                className="w-full pl-12 pr-12 pt-5 pb-2 border-2 border-gray-300 rounded-lg text-gray-900 bg-white placeholder-transparent focus:border-red-500 focus:outline-none transition-all"
+                placeholder="Password"
+              />
+              <label className={`absolute left-12 bg-white px-1 transition-all duration-200 pointer-events-none ${
+                activeField === 'password' || password
+                  ? 'top-0 -translate-y-1/2 text-xs text-red-500'
+                  : 'top-1/2 -translate-y-1/2 text-gray-400'
+              }`}>
+                Password
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                {showPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+              </button>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold py-3 rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:transform-none"
+            >
+              {loading ? <LoadingSpinner size="sm" /> : 'Sign In'}
+            </button>
+          </form>
+        </div>
+
+        {/* Toggle Container */}
+        <div className={`absolute top-0 left-1/2 w-1/2 h-full overflow-hidden transition-all duration-[600ms] ease-in-out z-[1000] ${
+          isActive ? '-translate-x-full' : ''
+        }`}>
+          <div className={`bg-gradient-to-r from-red-500 to-red-600 text-white relative -left-full h-full w-[200%] transition-all duration-[600ms] ease-in-out ${
+            isActive ? 'translate-x-1/2' : 'translate-x-0'
+          }`}>
+            {/* Red panel with custom shape */}
+            <div className="absolute inset-0">
+              <div className={`absolute w-1/2 h-full bg-red-500 ${
+                isActive ? 'right-0 rounded-tr-[30px] rounded-tl-[150px] rounded-bl-[150px]' : 'left-0 rounded-tl-[30px] rounded-tr-[150px] rounded-br-[150px]'
+              }`} />
+            </div>
+
+            {/* Toggle Left Panel */}
+            <div className={`absolute w-1/2 h-full flex items-center justify-center flex-col px-[30px] text-center top-0 transition-all duration-[600ms] ease-in-out ${
+              isActive ? 'translate-x-0' : '-translate-x-[200%]'
+            }`}>
+              <h1 className="text-3xl font-bold mb-4">Welcome to Pinspire!</h1>
+              <p className="mb-8 text-sm opacity-90">Already have an account? Jump back in to discover and save amazing ideas</p>
+              <button 
+                className="bg-transparent border-2 border-white text-white text-xs px-11 py-2.5 rounded-lg font-semibold tracking-wider uppercase mt-2.5 cursor-pointer transition-all duration-300 hover:bg-white hover:text-red-500"
+                onClick={() => setIsActive(false)}
+                type="button"
+              >
+                Sign In
+              </button>
+            </div>
+
+            {/* Toggle Right Panel */}
+            <div className={`absolute right-0 w-1/2 h-full flex items-center justify-center flex-col px-[30px] text-center top-0 transition-all duration-[600ms] ease-in-out ${
+              isActive ? 'translate-x-[200%]' : 'translate-x-0'
+            }`}>
+              <h1 className="text-3xl font-bold mb-4">New to Pinspire?</h1>
+              <p className="mb-8 text-sm opacity-90">Join our community to discover, save and share creative ideas from around the world</p>
+              <button 
+                className="bg-transparent border-2 border-white text-white text-xs px-11 py-2.5 rounded-lg font-semibold tracking-wider uppercase mt-2.5 cursor-pointer transition-all duration-300 hover:bg-white hover:text-red-500"
+                onClick={() => setIsActive(true)}
+                type="button"
+              >
+                Sign Up
+              </button>
             </div>
           </div>
         </div>

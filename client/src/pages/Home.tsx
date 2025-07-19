@@ -44,7 +44,7 @@ export const Home: React.FC = () => {
 
   useEffect(() => {
     reset();
-  }, [category, searchQuery]);
+  }, [category, searchQuery, reset]);
 
   // Ispravno handleLike sa loading i optimistic update
   const handleLike = useCallback(async (id: number) => {
@@ -71,7 +71,7 @@ export const Home: React.FC = () => {
       }
     }
     setLikeLoading(null);
-  }, [images, user]);
+  }, [images, user, imageRepository]);
 
   const handleSave = async (_id: number) => {
     if (!user) return;
@@ -79,8 +79,8 @@ export const Home: React.FC = () => {
   };
 
   const handleDelete = async (id: number) => {
-    const success = await imageRepository.deleteImage(id);
-    if (success) {
+    const response = await imageRepository.deleteImage(id);
+    if (response.success) {
       reset();
     }
   };
@@ -113,7 +113,7 @@ export const Home: React.FC = () => {
           images={images}
           loading={loading}
           onLike={handleLike}
-          likeLoading={likeLoading} // Dodaj i u props komponentu ImageGridProps!
+          likeLoading={likeLoading} // Dodaj i u props komponentu ImageGridProps ako koristiš loading na like dugmetu!
           onSave={handleSave}
           onDelete={handleDelete}
           onEdit={handleEdit}

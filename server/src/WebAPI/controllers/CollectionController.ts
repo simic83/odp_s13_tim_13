@@ -1,22 +1,28 @@
 import { Response, Router } from 'express';
 import { validationResult } from 'express-validator';
 import { CollectionService } from '../../Services/collections/CollectionService';
+import { ImageService } from '../../Services/images/ImageService';
 import { CollectionRepository } from '../../Database/repositories/collections/CollectionRepository';
+import { ImageRepository } from '../../Database/repositories/images/ImageRepository';
 import { AuthRequest, authMiddleware } from '../middlewares/AuthMiddleware';
 
 export class CollectionController {
   public router: Router;
   private collectionService: CollectionService;
+  private imageService: ImageService;
 
   constructor() {
     this.router = Router();
     const collectionRepository = new CollectionRepository();
+    const imageRepository = new ImageRepository();
     this.collectionService = new CollectionService(collectionRepository);
+    this.imageService = new ImageService(imageRepository);
 
     // Public routes
     this.router.get('/', this.getCollections);
     this.router.get('/user/:userId', this.getUserCollections);
     this.router.get('/:id', this.getCollectionById);
+    this.router.get('/:id/images', this.getCollectionImages);
 
     // Protected routes
     this.router.post('/', authMiddleware, this.createCollection);
@@ -192,6 +198,26 @@ export class CollectionController {
       });
     } catch (error) {
       console.error('Error in deleteCollection:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Server error'
+      });
+    }
+  };
+
+  getCollectionImages = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const collectionId = parseInt(req.params.id);
+      // Get images that belong to this collection
+      const imageRepository = new ImageRepository();
+      const images = await imageRepository.getByCollectionId(collectionId);
+
+      res.json({
+        success: true,
+        data: images
+      });
+    } catch (error) {
+      console.error('Error in getCollectionImages:', error);
       res.status(500).json({
         success: false,
         error: 'Server error'

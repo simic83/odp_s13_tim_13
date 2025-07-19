@@ -10,7 +10,7 @@ export class ImageRepository implements IImageRepository {
       const params: any = { page, pageSize };
       if (category) params.category = category;
       if (search) params.search = search;
-      
+
       const response = await axiosInstance.get('/images', { params });
       return response.data;
     } catch (error: any) {
@@ -172,4 +172,17 @@ export class ImageRepository implements IImageRepository {
       };
     }
   }
+
+  async getImagesByCollection(collectionId: number): Promise<ApiResponse<Image[]>> {
+    try {
+      const response = await axiosInstance.get(`/collections/${collectionId}/images`);
+      return response.data;
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to fetch collection images'
+      };
+    }
+  }
+
 }

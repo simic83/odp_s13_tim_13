@@ -1,18 +1,24 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 
 interface SearchBarProps {
   onSearch: (query: string) => void;
   placeholder?: string;
   className?: string;
+  initialValue?: string;
 }
 
 export const SearchBar: React.FC<SearchBarProps> = ({
   onSearch,
   placeholder = 'Search for ideas...',
   className = '',
+  initialValue = ''
 }) => {
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialValue);
   const [isFocused, setIsFocused] = useState(false);
+
+  useEffect(() => {
+    setQuery(initialValue);
+  }, [initialValue]);
 
   const debounce = (func: Function, wait: number) => {
     let timeout: ReturnType<typeof setTimeout>;
@@ -25,7 +31,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   const debouncedSearch = useCallback(
     debounce((value: string) => {
       onSearch(value);
-    }, 300),
+    }, 500), // Increased debounce time
     [onSearch]
   );
 
@@ -35,16 +41,22 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     debouncedSearch(value);
   };
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSearch(query);
+  };
+
   const handleClear = () => {
     setQuery('');
     onSearch('');
   };
 
   return (
-    <div className={`relative ${className}`}>
+    <form onSubmit={handleSubmit} className={`relative ${className}`}>
       <div
-        className={`relative flex items-center transition-all duration-300 ${isFocused ? 'transform scale-105' : ''
-          }`}
+        className={`relative flex items-center transition-all duration-300 ${
+          isFocused ? 'transform scale-105' : ''
+        }`}
       >
         <svg
           className="absolute left-4 w-5 h-5 text-gray-400 pointer-events-none transition-colors duration-300"
@@ -70,6 +82,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         />
         {query && (
           <button
+            type="button"
             onClick={handleClear}
             className="absolute right-4 p-1 rounded-full hover:bg-gray-200 transition-all duration-300 group"
           >
@@ -89,6 +102,6 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           </button>
         )}
       </div>
-    </div>
+    </form>
   );
 };
