@@ -57,9 +57,9 @@ export const ImageCard: React.FC<ImageCardProps> = ({
                     e.stopPropagation();
                     setShowMenu(!showMenu);
                   }}
-                  className="p-2 rounded-full bg-white/90 hover:bg-white backdrop-blur-sm transition-all duration-300"
+                  className="p-2 rounded-full bg-transparent hover:bg-black/10 transition-all duration-300"
                 >
-                  <MoreVertical className="w-5 h-5 text-gray-700" />
+                  <MoreVertical className="w-5 h-5 text-white" />
                 </button>
                 {showMenu && (
                   <div className="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-10">
@@ -97,6 +97,7 @@ export const ImageCard: React.FC<ImageCardProps> = ({
             </div>
           )}
 
+
           {/* Action buttons - right side */}
           <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
             {onLike && (
@@ -105,11 +106,10 @@ export const ImageCard: React.FC<ImageCardProps> = ({
                 className="p-2.5 rounded-full backdrop-blur-sm transition-all duration-300 hover:scale-110"
               >
                 <Heart
-                  className={`w-6 h-6 transition-colors ${
-                    image.isLiked
+                  className={`w-6 h-6 transition-colors ${image.isLiked
                       ? 'text-red-500 fill-red-500'
                       : 'text-white drop-shadow-lg hover:text-red-500'
-                  }`}
+                    }`}
                   fill={image.isLiked ? 'currentColor' : 'none'}
                   strokeWidth={2}
                 />
@@ -138,11 +138,10 @@ export const ImageCard: React.FC<ImageCardProps> = ({
                 className="p-2.5 rounded-full backdrop-blur-sm transition-all duration-300 hover:scale-110"
               >
                 <Bookmark
-                  className={`w-6 h-6 transition-colors ${
-                    image.isSaved
+                  className={`w-6 h-6 transition-colors ${image.isSaved
                       ? 'text-green-500 fill-green-500'
                       : 'text-white drop-shadow-lg hover:text-green-500'
-                  }`}
+                    }`}
                   fill={image.isSaved ? 'currentColor' : 'none'}
                   strokeWidth={2}
                 />
