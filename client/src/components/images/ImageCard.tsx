@@ -48,63 +48,9 @@ export const ImageCard: React.FC<ImageCardProps> = ({
           {/* Overlay on hover */}
           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-          {/* User info - bottom left */}
-          <div className="absolute bottom-4 left-4 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
-            {image.user?.profileImage ? (
-              <img
-                src={image.user.profileImage}
-                alt={image.user.username}
-                className="w-8 h-8 rounded-full"
-              />
-            ) : (
-              <Avatar username={image.user?.username || 'U'} size="sm" />
-            )}
-            <span className="text-white font-medium text-sm">{image.user?.username}</span>
-          </div>
-
-          {/* Action buttons - right side */}
-          <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
-            {onLike && (
-              <button
-                onClick={(e) => handleAction(e, () => onLike(image.id))}
-                className={`p-2.5 rounded-full backdrop-blur-sm transition-all duration-300 ${image.isLiked
-                    ? 'bg-red-500 text-white'
-                    : 'bg-white/90 text-gray-700 hover:bg-red-500 hover:text-white'
-                  }`}
-              >
-                <Heart className="w-5 h-5" fill={image.isLiked ? 'currentColor' : 'none'} />
-              </button>
-            )}
-
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowModal(true);
-              }}
-              className="p-2.5 rounded-full bg-white/90 text-gray-700 hover:bg-blue-500 hover:text-white backdrop-blur-sm transition-all duration-300"
-            >
-              <MessageCircle className="w-5 h-5" />
-            </button>
-
-            {onSave && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowModal(true);
-                }}
-                className={`p-2.5 rounded-full backdrop-blur-sm transition-all duration-300 ${image.isSaved
-                    ? 'bg-green-500 text-white'
-                    : 'bg-white/90 text-gray-700 hover:bg-green-500 hover:text-white'
-                  }`}
-              >
-                <Bookmark className="w-5 h-5" fill={image.isSaved ? 'currentColor' : 'none'} />
-              </button>
-            )}
-          </div>
-
-          {/* Owner menu - top right */}
+          {/* Owner menu - top left */}
           {isOwner && (
-            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-300">
+            <div className="absolute top-4 left-4 opacity-0 group-hover:opacity-100 transition-all duration-300">
               <div className="relative">
                 <button
                   onClick={(e) => {
@@ -115,9 +61,8 @@ export const ImageCard: React.FC<ImageCardProps> = ({
                 >
                   <MoreVertical className="w-5 h-5 text-gray-700" />
                 </button>
-
                 {showMenu && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-10">
+                  <div className="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-10">
                     {onEdit && (
                       <button
                         onClick={(e) => {
@@ -151,6 +96,73 @@ export const ImageCard: React.FC<ImageCardProps> = ({
               </div>
             </div>
           )}
+
+          {/* Action buttons - right side */}
+          <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
+            {onLike && (
+              <button
+                onClick={(e) => handleAction(e, () => onLike(image.id))}
+                className="p-2.5 rounded-full backdrop-blur-sm transition-all duration-300 hover:scale-110"
+              >
+                <Heart
+                  className={`w-6 h-6 transition-colors ${
+                    image.isLiked
+                      ? 'text-red-500 fill-red-500'
+                      : 'text-white drop-shadow-lg hover:text-red-500'
+                  }`}
+                  fill={image.isLiked ? 'currentColor' : 'none'}
+                  strokeWidth={2}
+                />
+              </button>
+            )}
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowModal(true);
+              }}
+              className="p-2.5 rounded-full backdrop-blur-sm transition-all duration-300 hover:scale-110"
+            >
+              <MessageCircle
+                className="w-6 h-6 text-white drop-shadow-lg hover:text-blue-500 transition-colors"
+                strokeWidth={2}
+              />
+            </button>
+
+            {onSave && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowModal(true);
+                }}
+                className="p-2.5 rounded-full backdrop-blur-sm transition-all duration-300 hover:scale-110"
+              >
+                <Bookmark
+                  className={`w-6 h-6 transition-colors ${
+                    image.isSaved
+                      ? 'text-green-500 fill-green-500'
+                      : 'text-white drop-shadow-lg hover:text-green-500'
+                  }`}
+                  fill={image.isSaved ? 'currentColor' : 'none'}
+                  strokeWidth={2}
+                />
+              </button>
+            )}
+          </div>
+
+          {/* User info - bottom left */}
+          <div className="absolute bottom-4 left-4 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
+            {image.user?.profileImage ? (
+              <img
+                src={image.user.profileImage}
+                alt={image.user.username}
+                className="w-8 h-8 rounded-full"
+              />
+            ) : (
+              <Avatar username={image.user?.username || 'U'} size="sm" />
+            )}
+            <span className="text-white font-medium text-sm">{image.user?.username}</span>
+          </div>
         </div>
       </div>
 

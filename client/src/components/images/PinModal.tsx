@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Heart, MessageCircle, Bookmark, MoreVertical, Edit, Trash2, Send } from 'lucide-react';
+import { X, Heart, MessageCircle, Bookmark, MoreVertical, Edit, Trash2, Send, Plus, Folder } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Image } from '../../Domain/models/Image';
 import { Comment } from '../../Domain/models/Comment';
@@ -9,7 +9,6 @@ import { useAuth } from '../../hooks/useAuth';
 import { ImageRepository } from '../../api/repositories/ImageRepository';
 import { CommentRepository } from '../../api/repositories/CommentRepository';
 import { CollectionRepository } from '../../api/repositories/CollectionRepository';
-import { Plus, Folder } from 'lucide-react';
 
 interface PinModalProps {
     image: Image;
@@ -52,6 +51,7 @@ export const PinModal: React.FC<PinModalProps> = ({
                 fetchCollections();
             }
         }
+        // eslint-disable-next-line
     }, [isOpen, user]);
 
     const fetchComments = async () => {
@@ -144,9 +144,52 @@ export const PinModal: React.FC<PinModalProps> = ({
 
                     {/* Right side - Details */}
                     <div className="md:w-1/2 flex flex-col h-full">
-                        {/* Header with user info */}
+                        {/* Header with user info - REPLACED */}
                         <div className="p-6 border-b flex items-center justify-between">
                             <div className="flex items-center gap-3">
+                                {isOwner && (
+                                    <div className="relative">
+                                        <button
+                                            onClick={() => setShowOwnerMenu(!showOwnerMenu)}
+                                            className="p-2 rounded-full hover:bg-gray-100 transition-all duration-300"
+                                        >
+                                            <MoreVertical className="w-5 h-5 text-gray-700" />
+                                        </button>
+                                        {showOwnerMenu && (
+                                            <div className="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-10">
+                                                {onEdit && (
+                                                    <button
+                                                        onClick={() => {
+                                                            setShowOwnerMenu(false);
+                                                            onEdit(image.id);
+                                                            onClose();
+                                                        }}
+                                                        className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-50 text-gray-700"
+                                                    >
+                                                        <Edit className="w-4 h-4" />
+                                                        Edit Pin
+                                                    </button>
+                                                )}
+                                                {onDelete && (
+                                                    <button
+                                                        onClick={() => {
+                                                            setShowOwnerMenu(false);
+                                                            if (window.confirm('Are you sure you want to delete this pin?')) {
+                                                                onDelete(image.id);
+                                                                onClose();
+                                                            }
+                                                        }}
+                                                        className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-50 text-red-600"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                        Delete Pin
+                                                    </button>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
                                 {image.user?.profileImage ? (
                                     <img
                                         src={image.user.profileImage}
@@ -161,51 +204,8 @@ export const PinModal: React.FC<PinModalProps> = ({
                                     <p className="text-sm text-gray-500 capitalize">{image.category}</p>
                                 </div>
                             </div>
-
-                            {isOwner && (
-                                <div className="relative">
-                                    <button
-                                        onClick={() => setShowOwnerMenu(!showOwnerMenu)}
-                                        className="p-2 rounded-full hover:bg-gray-100 transition-all"
-                                    >
-                                        <MoreVertical className="w-5 h-5 text-gray-700" />
-                                    </button>
-
-                                    {showOwnerMenu && (
-                                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-10">
-                                            {onEdit && (
-                                                <button
-                                                    onClick={() => {
-                                                        setShowOwnerMenu(false);
-                                                        onEdit(image.id);
-                                                        onClose();
-                                                    }}
-                                                    className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-50 text-gray-700"
-                                                >
-                                                    <Edit className="w-4 h-4" />
-                                                    Edit Pin
-                                                </button>
-                                            )}
-                                            {onDelete && (
-                                                <button
-                                                    onClick={() => {
-                                                        setShowOwnerMenu(false);
-                                                        if (window.confirm('Are you sure you want to delete this pin?')) {
-                                                            onDelete(image.id);
-                                                            onClose();
-                                                        }
-                                                    }}
-                                                    className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-50 text-red-600"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                    Delete Pin
-                                                </button>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
                         </div>
+                        {/* END header */}
 
                         {/* Content */}
                         <div className="flex-1 overflow-y-auto">
@@ -221,8 +221,8 @@ export const PinModal: React.FC<PinModalProps> = ({
                                     <button
                                         onClick={handleLike}
                                         className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${isLiked
-                                                ? 'bg-red-500 text-white'
-                                                : 'bg-gray-100 text-gray-700 hover:bg-red-100'
+                                            ? 'bg-red-500 text-white'
+                                            : 'bg-gray-100 text-gray-700 hover:bg-red-100'
                                             }`}
                                     >
                                         <Heart className="w-5 h-5" fill={isLiked ? 'currentColor' : 'none'} />
@@ -240,8 +240,8 @@ export const PinModal: React.FC<PinModalProps> = ({
                                         <button
                                             onClick={() => user ? setShowCollectionMenu(!showCollectionMenu) : navigate('/auth')}
                                             className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${isSaved
-                                                    ? 'bg-green-500 text-white'
-                                                    : 'bg-gray-100 text-gray-700 hover:bg-green-100'
+                                                ? 'bg-green-500 text-white'
+                                                : 'bg-gray-100 text-gray-700 hover:bg-green-100'
                                                 }`}
                                         >
                                             <Bookmark className="w-5 h-5" fill={isSaved ? 'currentColor' : 'none'} />
