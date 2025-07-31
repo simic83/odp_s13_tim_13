@@ -79,7 +79,7 @@ export class ImageRepository implements IImageRepository {
     }
   }
 
-  async getAll(page: number, limit: number, category?: string, search?: string): Promise<{ images: Image[], total: number }> {
+  async getAll(page: number, limit: number, category?: string, search?: string, userId?: number): Promise<{ images: Image[], total: number }> {
     try {
       let whereClause = 'WHERE 1=1';
       const params: any[] = [];
@@ -105,6 +105,7 @@ export class ImageRepository implements IImageRepository {
         SELECT i.*, 
                (SELECT COUNT(*) FROM likes l WHERE l.imageId = i.id) as likes,
                u.username, u.profileImage as userProfileImage
+               ${userId ? ', (SELECT COUNT(*) FROM likes WHERE imageId = i.id AND userId = ?) as userLiked' : ''}
         FROM images i
         LEFT JOIN users u ON i.userId = u.id
         ${whereClause}
@@ -112,14 +113,10 @@ export class ImageRepository implements IImageRepository {
         LIMIT ${offset}, ${limit}
       `;
 
-      // Debug log (možeš ukloniti)
-      console.log('\n----- GET ALL IMAGES DEBUG -----');
-      console.log('Query:', query);
-      console.log('Params:', params);
-      console.log('page:', page, 'limit:', limit, 'offset:', offset, 'category:', category, 'search:', search);
-      console.log('------------------------------\n');
+      // Add userId to params if provided
+      const queryParams = userId ? [userId, ...params] : params;
 
-      const [rows] = await db.execute<RowDataPacket[]>(query, params);
+      const [rows] = await db.execute<RowDataPacket[]>(query, queryParams);
 
       const images = rows.map(row => {
         const image = new Image(
@@ -129,7 +126,7 @@ export class ImageRepository implements IImageRepository {
           row.description,
           row.link,
           row.category,
-          row.likes, // sada je COUNT iz likes tabele
+          row.likes,
           row.saves,
           row.userId,
           row.collectionId,
@@ -143,6 +140,11 @@ export class ImageRepository implements IImageRepository {
             username: row.username,
             profileImage: row.userProfileImage
           };
+        }
+
+        // Set isLiked if userId was provided
+        if (userId) {
+          image.isLiked = row.userLiked > 0;
         }
 
         return image;

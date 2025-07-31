@@ -211,7 +211,7 @@ export const PinModal: React.FC<PinModalProps> = ({
                         <div className="flex-1 overflow-y-auto">
                             {/* Title and Description */}
                             <div className="p-6">
-                                <h2 className="text-2xl font-bold mb-2">{image.title}</h2>
+                                <h2 className="text-2xl font-bold mb-2 text-gray-900">{image.title}</h2>
                                 {image.description && (
                                     <p className="text-gray-700 mb-4">{image.description}</p>
                                 )}

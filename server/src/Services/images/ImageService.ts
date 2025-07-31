@@ -16,9 +16,10 @@ export class ImageService implements IImageService {
   }
 
   async getImages(page: number, limit: number, category?: string, search?: string, currentUserId?: number): Promise<any> {
-    const { images, total } = await this.imageRepository.getAll(page, limit, category, search);
+    const { images, total } = await this.imageRepository.getAll(page, limit, category, search, currentUserId);
     
-    // Add isLiked and isSaved flags if user is authenticated
+    // isLiked is already set in repository if currentUserId is provided
+    // Add isSaved flags if user is authenticated
     if (currentUserId) {
       for (const image of images) {
         image.isLiked = await this.likeRepository.isLikedByUser(image.id, currentUserId);

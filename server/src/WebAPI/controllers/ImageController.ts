@@ -2,6 +2,7 @@ import { Request, Response, Router } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import jwt from 'jsonwebtoken';
 import { IImageService } from '../../Domain/services/images/IImageService';
 import { AuthRequest, authMiddleware } from '../middlewares/AuthMiddleware';
 
@@ -72,11 +73,23 @@ export class ImageController {
       let category = req.query.category as string | undefined;
       if (category) category = category.toLowerCase();
       const search = req.query.search as string | undefined;
-      const currentUserId = (req as AuthRequest).user?.id;
+      
+      // Extract user from token if present
+      let currentUserId: number | undefined;
+      const token = req.header('Authorization')?.replace('Bearer ', '');
+      if (token) {
+        try {
+          const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+          currentUserId = decoded.userId;
+        } catch (error) {
+          // Token is invalid, continue without user
+        }
+      }
+      
       const result = await this.imageService.getImages(page, limit, category, search, currentUserId);
       res.json({
         success: true,
-        data: result  // The result already contains the correct structure
+        data: result
       });
     } catch (error) {
       console.error('Error in getImages:', error);
