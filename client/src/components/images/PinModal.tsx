@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Heart, MessageCircle, Bookmark, MoreVertical, Edit, Trash2, Send, Plus, Folder, ArrowUpRight } from 'lucide-react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Heart, MessageCircle, Bookmark, MoreVertical, Edit, Trash2, Send, Plus, Folder, ArrowUpRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Image } from '../../Domain/models/Image';
 import { Comment } from '../../Domain/models/Comment';
 import { Collection } from '../../Domain/models/Collection';

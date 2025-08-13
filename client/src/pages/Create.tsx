@@ -4,6 +4,20 @@ import { useAuth } from '../hooks/useAuth';
 import { ImageRepository } from '../api/repositories/ImageRepository';
 import { CollectionRepository } from '../api/repositories/CollectionRepository';
 
+// Jedinstvena lista kategorija (usklađena sa CategoryFilter)
+const CATEGORIES = [
+  { value: 'interior', label: 'Interior Design' },
+  { value: 'fashion', label: 'Fashion' },
+  { value: 'recipes', label: 'Recipes' },
+  { value: 'travel', label: 'Travel' },
+  { value: 'art', label: 'Art' },
+  { value: 'nature', label: 'Nature' },
+  { value: 'technology', label: 'Technology' },
+  { value: 'fitness', label: 'Fitness' },
+  { value: 'diy', label: 'DIY' },
+  { value: 'photography', label: 'Photography' },
+];
+
 export const Create: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -12,7 +26,7 @@ export const Create: React.FC = () => {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('');
+  const [category, setCategory] = useState(''); // sada prima value iz dropdown-a
   const [collectionId, setCollectionId] = useState<number | undefined>(undefined);
   const [link, setLink] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -25,9 +39,7 @@ export const Create: React.FC = () => {
     const fetchCollections = async () => {
       if (!user) return;
       const response = await collectionRepository.getUserCollections(user.id);
-      if (response.success && response.data) {
-        setCollections(response.data);
-      }
+      if (response.success && response.data) setCollections(response.data);
     };
     fetchCollections();
   }, [user]);
@@ -40,31 +52,34 @@ export const Create: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     setError(null);
+
     if (!user) {
       setError('You must be logged in to create a pin.');
       return;
     }
-    if (!title || !imageFile || !category) {
+    if (!title.trim() || !imageFile || !category.trim()) {
       setError('Please fill in all required fields.');
       return;
     }
+
     setLoading(true);
 
     const formData = new FormData();
-    formData.append('title', title);
-    formData.append('description', description);
-    formData.append('category', category.toLowerCase());
-    formData.append('link', link);
-    formData.append('userId', user.id);
-    if (collectionId) formData.append('collectionId', collectionId.toString());
+    formData.append('title', title.trim());
+    formData.append('description', description.trim());
+    formData.append('category', category.trim().toLowerCase()); // value već dolazi lower, ali ostavljamo radi sigurnosti
+    formData.append('link', link.trim());
+    formData.append('userId', String(user.id));
+    if (collectionId) formData.append('collectionId', String(collectionId));
     formData.append('image', imageFile);
 
     const response = await imageRepository.createImage(formData);
     setLoading(false);
 
     if (response.success && response.data) {
-      navigate(`/pin/${response.data.id}`);
+      navigate('/'); // posle kreiranja — Home
     } else {
       setError(response.error || 'Failed to create pin.');
     }
@@ -72,10 +87,16 @@ export const Create: React.FC = () => {
 
   return (
     <div className="max-w-xl mx-auto mt-12 p-8 bg-white rounded-2xl shadow-2xl border border-gray-200 animate-slideIn">
-      <h1 className="text-3xl font-bold mb-8 text-gray-900 text-center tracking-tight animate-fadeIn">Create Pin</h1>
+      <h1 className="text-3xl font-bold mb-8 text-gray-900 text-center tracking-tight animate-fadeIn">
+        Create Pin
+      </h1>
+
       {error && (
-        <div className="mb-4 text-red-600 bg-red-50 rounded-lg px-4 py-2 border border-red-200 font-semibold text-center">{error}</div>
+        <div className="mb-4 text-red-600 bg-red-50 rounded-lg px-4 py-2 border border-red-200 font-semibold text-center">
+          {error}
+        </div>
       )}
+
       <form onSubmit={handleSubmit} className="space-y-7">
         <div>
           <label className="block font-semibold text-gray-800 mb-2">
@@ -89,6 +110,7 @@ export const Create: React.FC = () => {
             placeholder="e.g. Cozy Living Room Decor"
           />
         </div>
+
         <div>
           <label className="block font-semibold text-gray-800 mb-2">Description</label>
           <textarea
@@ -99,18 +121,25 @@ export const Create: React.FC = () => {
             placeholder="Write a short description..."
           />
         </div>
+
+        {/* Category kao dropdown */}
         <div>
           <label className="block font-semibold text-gray-800 mb-2">
             Category <span className="text-red-500">*</span>
           </label>
-          <input
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-red-400 focus:border-red-400 outline-none transition duration-200"
+          <select
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-red-400 focus:border-red-400 outline-none transition duration-200"
             value={category}
             onChange={e => setCategory(e.target.value)}
             required
-            placeholder="e.g. travel, recipes, fashion..."
-          />
+          >
+            <option value="" disabled>Choose a category…</option>
+            {CATEGORIES.map(c => (
+              <option key={c.value} value={c.value}>{c.label}</option>
+            ))}
+          </select>
         </div>
+
         <div>
           <label className="block font-semibold text-gray-800 mb-2">Collection</label>
           <select
@@ -119,11 +148,12 @@ export const Create: React.FC = () => {
             onChange={e => setCollectionId(e.target.value ? Number(e.target.value) : undefined)}
           >
             <option value="">None</option>
-            {collections.map((col) => (
+            {collections.map(col => (
               <option key={col.id} value={col.id}>{col.name}</option>
             ))}
           </select>
         </div>
+
         <div>
           <label className="block font-semibold text-gray-800 mb-2">External Link</label>
           <input
@@ -133,6 +163,7 @@ export const Create: React.FC = () => {
             placeholder="Optional"
           />
         </div>
+
         <div>
           <label className="block font-semibold text-gray-800 mb-2">
             Image <span className="text-red-500">*</span>
@@ -152,13 +183,31 @@ export const Create: React.FC = () => {
             />
           )}
         </div>
+
+        {/* Crveno outline→fill dugme (punjenje iz sredine ka spolja) */}
         <button
           type="submit"
-          className="w-full py-3 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600 transition-all text-lg tracking-wider shadow-sm"
           disabled={loading}
+          className="
+    w-full relative overflow-hidden border-2 border-red-500 bg-transparent text-red-500 py-3 rounded-lg font-semibold
+    transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center group
+  "
         >
-          {loading ? 'Creating...' : 'Create Pin'}
+          <span
+            className="
+      absolute left-0 top-0 w-full h-full bg-red-500 scale-x-0 origin-center
+      transition-transform duration-300 group-hover:scale-x-100 z-0
+    "
+          ></span>
+          <span
+            className="
+      relative z-10 transition-colors duration-300 group-hover:text-white w-full flex justify-center
+    "
+          >
+            {loading ? 'Creating...' : 'Create Pin'}
+          </span>
         </button>
+
       </form>
     </div>
   );
