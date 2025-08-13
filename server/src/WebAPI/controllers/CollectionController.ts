@@ -30,11 +30,21 @@ export class CollectionController {
     this.router.delete('/:id', authMiddleware, this.deleteCollection);
   }
 
+  // GET /api/collections?page=1&pageSize=20&userId=optional
   getCollections = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-      const page = parseInt(req.query.page as string) || 1;
-      const pageSize = parseInt(req.query.pageSize as string) || 20;
-      const userId = req.query.userId as string | undefined;
+      // parse & sanitize
+      const rawPage = Number.parseInt(String(req.query.page ?? ''), 10);
+      const rawPageSize = Number.parseInt(String(req.query.pageSize ?? ''), 10);
+
+      const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
+      let pageSize = Number.isFinite(rawPageSize) && rawPageSize > 0 ? rawPageSize : 20;
+      // ograniči pageSize da se DB ne guši
+      pageSize = Math.min(Math.max(pageSize, 1), 100);
+
+      const userId = (typeof req.query.userId === 'string' && req.query.userId.trim() !== '')
+        ? req.query.userId.trim()
+        : undefined;
 
       const result = await this.collectionService.getCollections({
         page,
@@ -52,70 +62,62 @@ export class CollectionController {
           hasMore: result.hasMore
         }
       });
-    } catch (error) {
-      console.error('Error in getCollections:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Server error'
+    } catch (error: any) {
+      console.error('❌ Error in getCollections:', {
+        message: error?.message,
+        code: error?.code,
+        sqlState: error?.sqlState
       });
+      res.status(500).json({ success: false, error: 'Server error' });
     }
   };
 
+  // GET /api/collections/user/:userId
   getUserCollections = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
       const userId = req.params.userId;
       const collections = await this.collectionService.getUserCollections(userId);
 
-      res.json({
-        success: true,
-        data: collections
+      res.json({ success: true, data: collections });
+    } catch (error: any) {
+      console.error('❌ Error in getUserCollections:', {
+        message: error?.message,
+        code: error?.code
       });
-    } catch (error) {
-      console.error('Error in getUserCollections:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Server error'
-      });
+      res.status(500).json({ success: false, error: 'Server error' });
     }
   };
 
+  // GET /api/collections/:id
   getCollectionById = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
       const collection = await this.collectionService.getCollectionById(req.params.id);
 
       if (!collection) {
-        res.status(404).json({
-          success: false,
-          error: 'Collection not found'
-        });
+        res.status(404).json({ success: false, error: 'Collection not found' });
         return;
       }
 
-      res.json({
-        success: true,
-        data: collection
+      res.json({ success: true, data: collection });
+    } catch (error: any) {
+      console.error('❌ Error in getCollectionById:', {
+        message: error?.message,
+        code: error?.code
       });
-    } catch (error) {
-      console.error('Error in getCollectionById:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Server error'
-      });
+      res.status(500).json({ success: false, error: 'Server error' });
     }
   };
 
+  // POST /api/collections
   createCollection = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        res.status(400).json({
-          success: false,
-          errors: errors.array()
-        });
+        res.status(400).json({ success: false, errors: errors.array() });
         return;
       }
 
-      if (!req.user || !req.user.id) {
+      if (!req.user?.id) {
         res.status(401).json({ success: false, error: 'Unauthorized' });
         return;
       }
@@ -125,22 +127,20 @@ export class CollectionController {
         userId: req.user.id
       });
 
-      res.status(201).json({
-        success: true,
-        data: collection
+      res.status(201).json({ success: true, data: collection });
+    } catch (error: any) {
+      console.error('❌ Error in createCollection:', {
+        message: error?.message,
+        code: error?.code
       });
-    } catch (error) {
-      console.error('Error in createCollection:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Server error'
-      });
+      res.status(500).json({ success: false, error: 'Server error' });
     }
   };
 
+  // PUT /api/collections/:id
   updateCollection = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-      if (!req.user || !req.user.id) {
+      if (!req.user?.id) {
         res.status(401).json({ success: false, error: 'Unauthorized' });
         return;
       }
@@ -152,29 +152,24 @@ export class CollectionController {
       );
 
       if (!collection) {
-        res.status(404).json({
-          success: false,
-          error: 'Collection not found or access denied'
-        });
+        res.status(404).json({ success: false, error: 'Collection not found or access denied' });
         return;
       }
 
-      res.json({
-        success: true,
-        data: collection
+      res.json({ success: true, data: collection });
+    } catch (error: any) {
+      console.error('❌ Error in updateCollection:', {
+        message: error?.message,
+        code: error?.code
       });
-    } catch (error) {
-      console.error('Error in updateCollection:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Server error'
-      });
+      res.status(500).json({ success: false, error: 'Server error' });
     }
   };
 
+  // DELETE /api/collections/:id
   deleteCollection = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-      if (!req.user || !req.user.id) {
+      if (!req.user?.id) {
         res.status(401).json({ success: false, error: 'Unauthorized' });
         return;
       }
@@ -185,43 +180,39 @@ export class CollectionController {
       );
 
       if (!success) {
-        res.status(404).json({
-          success: false,
-          error: 'Collection not found or access denied'
-        });
+        res.status(404).json({ success: false, error: 'Collection not found or access denied' });
         return;
       }
 
-      res.json({
-        success: true,
-        message: 'Collection deleted successfully'
+      res.json({ success: true, message: 'Collection deleted successfully' });
+    } catch (error: any) {
+      console.error('❌ Error in deleteCollection:', {
+        message: error?.message,
+        code: error?.code
       });
-    } catch (error) {
-      console.error('Error in deleteCollection:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Server error'
-      });
+      res.status(500).json({ success: false, error: 'Server error' });
     }
   };
 
+  // GET /api/collections/:id/images
   getCollectionImages = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-      const collectionId = parseInt(req.params.id);
-      // Get images that belong to this collection
+      const collectionId = Number.parseInt(req.params.id, 10);
+      if (!Number.isFinite(collectionId)) {
+        res.status(400).json({ success: false, error: 'Invalid collection id' });
+        return;
+      }
+
       const imageRepository = new ImageRepository();
       const images = await imageRepository.getByCollectionId(collectionId);
 
-      res.json({
-        success: true,
-        data: images
+      res.json({ success: true, data: images });
+    } catch (error: any) {
+      console.error('❌ Error in getCollectionImages:', {
+        message: error?.message,
+        code: error?.code
       });
-    } catch (error) {
-      console.error('Error in getCollectionImages:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Server error'
-      });
+      res.status(500).json({ success: false, error: 'Server error' });
     }
   };
 }
