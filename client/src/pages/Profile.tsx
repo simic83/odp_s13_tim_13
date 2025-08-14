@@ -122,7 +122,7 @@ export const Profile: React.FC = () => {
     setLikeLoading(null);
   };
 
-  const handleSave = async (imageId: number) => {
+  const handleSave = async () => {
     if (!authUser) {
       navigate('/auth');
       return;
@@ -271,14 +271,6 @@ export const Profile: React.FC = () => {
                 </svg>
               </div>
               <p className="text-gray-500 text-lg mb-2">No pins yet</p>
-              {isOwner && (
-                <button
-                  onClick={() => navigate('/create')}
-                  className="mt-4 px-6 py-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all duration-300 transform hover:scale-105"
-                >
-                  Create your first Pin
-                </button>
-              )}
             </div>
           ) : (
             <ImageGrid
@@ -302,14 +294,6 @@ export const Profile: React.FC = () => {
                 </svg>
               </div>
               <p className="text-gray-500 text-lg mb-2">No collections yet</p>
-              {isOwner && (
-                <button
-                  onClick={() => navigate('/create-collection')}
-                  className="mt-4 px-6 py-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all duration-300 transform hover:scale-105"
-                >
-                  Create your first Collection
-                </button>
-              )}
             </div>
           ) : (
             <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">

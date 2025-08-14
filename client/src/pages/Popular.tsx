@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Heart, MessageCircle, Bookmark, TrendingUp, Clock, Calendar, CalendarDays } from 'lucide-react';
 import { ImageGrid } from '../components/images/ImageGrid';
 import { ImageRepository } from '../api/repositories/ImageRepository';
-import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { useAuth } from '../hooks/useAuth';
 import { Image } from '../Domain/models/Image';
 
@@ -14,99 +13,156 @@ export const Popular: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const imageRepository = new ImageRepository();
+  
+  // State za slike i paginaciju
+  const [images, setImages] = useState<Image[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const [sortPeriod, setSortPeriod] = useState<SortPeriod>('week');
   const [selectedCard, setSelectedCard] = useState<SortType>(null);
   const [likeLoading, setLikeLoading] = useState<number | null>(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-  const fetchPopularImages = async (page: number) => {
-    const response = await imageRepository.getPopularImages(page, 20);
-    if (response.success && response.data) {
-      let items = response.data.items;
+  // Funkcija za učitavanje slika
+  const fetchImages = useCallback(async (resetImages: boolean = false) => {
+    if (loading) return;
+    
+    setLoading(true);
+    
+    try {
+      const currentPage = resetImages ? 1 : page;
+      const response = await imageRepository.getPopularImages(currentPage, 20);
       
-      // Apply client-side sorting based on selected filter
-      if (selectedCard && items.length > 0) {
-        items = [...items].sort((a, b) => {
-          switch (selectedCard) {
-            case 'likes':
-              return b.likes - a.likes;
-            case 'saves':
-              return b.saves - a.saves;
-            case 'comments':
-              // Since we don't have comment count in the model, we'll use a combination
-              // For now, sort by likes + saves as a proxy for engagement
-              return (b.likes + b.saves) - (a.likes + a.saves);
-            default:
-              return 0;
-          }
-        });
+      if (response.success && response.data) {
+        let newImages = response.data.items;
+        
+        // Primeni sortiranje na klijentskoj strani
+        if (selectedCard && newImages.length > 0) {
+          newImages = [...newImages].sort((a, b) => {
+            switch (selectedCard) {
+              case 'likes':
+                return b.likes - a.likes;
+              case 'saves':
+                return b.saves - a.saves;
+              case 'comments':
+                // Pošto nemamo broj komentara, koristi kombinaciju
+                return (b.likes + b.saves) - (a.likes + a.saves);
+              default:
+                return 0;
+            }
+          });
+        }
+        
+        if (resetImages) {
+          setImages(newImages);
+          setPage(2);
+        } else {
+          setImages(prev => [...prev, ...newImages]);
+          setPage(prev => prev + 1);
+        }
+        
+        setHasMore(response.data.hasMore);
       }
-      
-      return {
-        items,
-        hasMore: response.data.hasMore,
-      };
+    } catch (error) {
+      console.error('Error fetching images:', error);
+    } finally {
+      setLoading(false);
+      if (isInitialLoad) {
+        setIsInitialLoad(false);
+      }
     }
-    return { items: [], hasMore: false };
-  };
+  }, [page, selectedCard, loading, isInitialLoad]);
 
-  const {
-    items: images,
-    loading,
-    setLastElement,
-    reset,
-  } = useInfiniteScroll<Image>(fetchPopularImages);
-
+  // Učitaj slike kad se promeni sortiranje
   useEffect(() => {
-    reset();
+    setImages([]);
+    setPage(1);
+    setHasMore(true);
+    fetchImages(true);
   }, [sortPeriod, selectedCard]);
 
-  const handleLike = async (id: number) => {
+  // Funkcija za skrol (za učitavanje više slika)
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.innerHeight + document.documentElement.scrollTop 
+          >= document.documentElement.offsetHeight - 100) {
+        if (hasMore && !loading) {
+          fetchImages(false);
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [hasMore, loading, fetchImages]);
+
+  // Ažurirano handleLike
+  const handleLike = useCallback(async (id: number) => {
     if (!user) {
       navigate('/auth');
       return;
     }
     
     setLikeLoading(id);
-    const image = images.find(img => img.id === id);
-    if (!image) {
+    
+    // Pronađi sliku
+    const imageToUpdate = images.find(img => img.id === id);
+    if (!imageToUpdate) {
       setLikeLoading(null);
       return;
     }
 
-    if (image.isLiked) {
-      const response = await imageRepository.unlikeImage(id);
-      if (response.success) {
-        image.isLiked = false;
-        image.likes = Math.max(0, image.likes - 1);
+    try {
+      let response;
+      if (imageToUpdate.isLiked) {
+        response = await imageRepository.unlikeImage(id);
+      } else {
+        response = await imageRepository.likeImage(id);
       }
-    } else {
-      const response = await imageRepository.likeImage(id);
-      if (response.success) {
-        image.isLiked = true;
-        image.likes++;
-      }
-    }
-    setLikeLoading(null);
-  };
 
-  const handleSave = async (id: number) => {
+      if (response.success) {
+        // Ažuriraj state sa novim nizom
+        setImages(prevImages => 
+          prevImages.map(img => 
+            img.id === id 
+              ? {
+                  ...img,
+                  isLiked: !img.isLiked,
+                  likes: img.isLiked ? Math.max(0, img.likes - 1) : img.likes + 1
+                }
+              : img
+          )
+        );
+      }
+    } catch (error) {
+      console.error('Error liking image:', error);
+    } finally {
+      setLikeLoading(null);
+    }
+  }, [images, user, navigate, imageRepository]);
+
+  // handleSave funkcija
+  const handleSave = useCallback(async (id: number) => {
     if (!user) {
       navigate('/auth');
       return;
     }
     alert('Select a collection to save this pin');
-  };
+  }, [user, navigate]);
 
-  const handleDelete = async (id: number) => {
+  // handleDelete funkcija
+  const handleDelete = useCallback(async (id: number) => {
     const response = await imageRepository.deleteImage(id);
     if (response.success) {
-      reset();
+      setImages(prevImages => prevImages.filter(img => img.id !== id));
     }
-  };
+  }, [imageRepository]);
 
-  const handleEdit = (id: number) => {
+  // handleEdit funkcija
+  const handleEdit = useCallback((id: number) => {
     navigate(`/edit/${id}`);
-  };
+  }, [navigate]);
 
   const sortCards = [
     {
@@ -146,8 +202,9 @@ export const Popular: React.FC = () => {
   };
 
   return (
-    <div className="w-full animate-slideIn">
-      <div className="mb-8 animate-fadeIn">
+    <div className="w-full">
+      {/* Naslov - animacija samo na initial load */}
+      <div className={`mb-8 ${isInitialLoad ? 'animate-fadeIn' : ''}`}>
         <h1 className="text-4xl font-bold text-gray-800 mb-2">Trending Now</h1>
         <p className="text-gray-600 mb-6">
           {selectedCard 
@@ -156,8 +213,8 @@ export const Popular: React.FC = () => {
         </p>
       </div>
 
-      {/* Sort Period Buttons */}
-      <div className="flex gap-2 mb-8 overflow-x-auto pb-2 animate-fadeIn animation-delay-100">
+      {/* Sort Period Buttons - animacija samo na initial load */}
+      <div className={`flex gap-2 mb-8 overflow-x-auto pb-2 ${isInitialLoad ? 'animate-fadeIn animation-delay-100' : ''}`}>
         {[
           { value: 'today', label: 'Today' },
           { value: 'week', label: 'This Week' },
@@ -182,8 +239,8 @@ export const Popular: React.FC = () => {
         })}
       </div>
 
-      {/* Sort Type Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 animate-fadeIn animation-delay-200">
+      {/* Sort Type Cards - animacija samo na initial load */}
+      <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 ${isInitialLoad ? 'animate-fadeIn animation-delay-200' : ''}`}>
         {sortCards.map((card) => {
           const Icon = card.icon;
           const isSelected = selectedCard === card.type;
@@ -255,8 +312,8 @@ export const Popular: React.FC = () => {
         })}
       </div>
 
-      {/* Images Grid */}
-      <div className="animate-fadeIn animation-delay-300">
+      {/* Images Grid - bez animacije osim na initial load */}
+      <div className={isInitialLoad ? 'animate-fadeIn animation-delay-300' : ''}>
         {selectedCard && images.length > 0 && (
           <div className="mb-4 px-2">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full">
@@ -278,14 +335,27 @@ export const Popular: React.FC = () => {
         
         <ImageGrid
           images={images}
-          loading={loading}
+          loading={loading && images.length === 0}
           onLike={handleLike}
           likeLoading={likeLoading}
           onSave={handleSave}
           onDelete={handleDelete}
           onEdit={handleEdit}
-          onLastElement={setLastElement}
         />
+        
+        {/* Loading indicator za još slika */}
+        {loading && images.length > 0 && (
+          <div className="flex justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+          </div>
+        )}
+        
+        {/* Poruka kad nema više slika */}
+        {!hasMore && images.length > 0 && (
+          <div className="text-center py-8 text-gray-500">
+            No more images to load
+          </div>
+        )}
       </div>
     </div>
   );
