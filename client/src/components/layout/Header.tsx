@@ -56,7 +56,6 @@ export const Header: React.FC = () => {
           </span>
         </Link>
 
-
         <div className="flex-1 max-w-xl mx-4 sm:mx-8">
           <SearchBar onSearch={handleSearch} />
         </div>
@@ -115,24 +114,30 @@ export const Header: React.FC = () => {
 
               <button
                 onClick={logout}
-                className="px-4 py-2 text-sm bg-gray-100 rounded-full hover:bg-gray-200 text-gray-700 transition-all duration-300 font-medium"
+                className="px-4 py-2 text-sm bg-gray-100 rounded-lg hover:bg-gray-200 text-gray-700 transition-all duration-300 font-medium"
               >
                 Logout
               </button>
             </>
           ) : (
             <>
+              {/* Log in button */}
               <Link
                 to="/auth"
-                className="px-5 py-2 text-sm bg-gray-900 text-white rounded-full font-medium hover:bg-gray-800 transition-all duration-300 transform hover:scale-105"
+                className="relative inline-flex items-center justify-center w-20 h-10 text-sm bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-semibold overflow-hidden transition-all duration-300 hover:shadow-lg group"
               >
-                Log in
+                <span className="relative z-10">Log in</span>
               </Link>
+
+              {/* Sign up button */}
               <Link
                 to="/auth"
-                className="px-5 py-2 text-sm bg-gray-100 text-gray-900 rounded-full font-medium hover:bg-gray-200 transition-all duration-300 hidden sm:block"
+                className="relative hidden sm:inline-flex items-center justify-center w-20 h-10 text-sm border border-red-500 text-red-500 rounded-lg font-semibold overflow-hidden transition-all duration-300 group"
               >
-                Sign up
+                <span className="absolute inset-0 bg-gradient-to-r from-red-500 to-red-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+                <span className="relative z-10 group-hover:text-white transition-colors duration-300">
+                  Sign up
+                </span>
               </Link>
             </>
           )}

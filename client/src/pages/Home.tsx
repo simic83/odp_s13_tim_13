@@ -46,9 +46,14 @@ export const Home: React.FC = () => {
     reset();
   }, [category, searchQuery, reset]);
 
-  // Ispravno handleLike sa loading i optimistic update
+  // Updated handleLike with auth redirect
   const handleLike = useCallback(async (id: number) => {
-    if (!user) return;
+    if (!user) {
+      // Redirect to auth page if not logged in
+      navigate('/auth');
+      return;
+    }
+    
     setLikeLoading(id);
 
     const image = images.find(img => img.id === id);
@@ -71,10 +76,14 @@ export const Home: React.FC = () => {
       }
     }
     setLikeLoading(null);
-  }, [images, user, imageRepository]);
+  }, [images, user, imageRepository, navigate]);
 
-  const handleSave = async (_id: number) => {
-    if (!user) return;
+  const handleSave = async (id: number) => {
+    if (!user) {
+      // Redirect to auth page if not logged in
+      navigate('/auth');
+      return;
+    }
     alert('Select a collection to save this pin');
   };
 
@@ -113,7 +122,7 @@ export const Home: React.FC = () => {
           images={images}
           loading={loading}
           onLike={handleLike}
-          likeLoading={likeLoading} // Dodaj i u props komponentu ImageGridProps ako koristiš loading na like dugmetu!
+          likeLoading={likeLoading}
           onSave={handleSave}
           onDelete={handleDelete}
           onEdit={handleEdit}

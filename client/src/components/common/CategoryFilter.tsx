@@ -24,13 +24,12 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
   onCategoryChange,
   className = '',
 }) => {
-  // Sve upoređuj i šalji kao lowercase
   const current = selectedCategory ? selectedCategory.toLowerCase() : undefined;
   return (
     <div className={`flex gap-2 overflow-x-auto pb-2 ${className}`}>
       <button
         onClick={() => onCategoryChange(undefined)}
-        className={`px-4 py-2 rounded-full whitespace-nowrap transition-all duration-300 ${
+        className={`px-4 py-2 rounded-lg whitespace-nowrap transition-all duration-300 ${
           !current
             ? 'bg-gray-900 text-white shadow-lg transform scale-105'
             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -42,7 +41,7 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
         <button
           key={value}
           onClick={() => onCategoryChange(value.toLowerCase())}
-          className={`px-4 py-2 rounded-full whitespace-nowrap transition-all duration-300 ${
+          className={`px-4 py-2 rounded-lg whitespace-nowrap transition-all duration-300 ${
             current === value.toLowerCase()
               ? 'bg-gray-900 text-white shadow-lg transform scale-105'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'

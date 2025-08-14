@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
 import { CollectionCard } from '../components/collections/CollectionCard';
 import { CollectionRepository } from '../api/repositories/CollectionRepository';
 import { Collection } from '../Domain/models/Collection';
@@ -17,7 +16,6 @@ export const Collections: React.FC = () => {
     const navigate = useNavigate();
     const collectionRepository = new CollectionRepository();
 
-    // Initial load
     useEffect(() => {
         fetchInitialCollections();
     }, []);
@@ -27,13 +25,11 @@ export const Collections: React.FC = () => {
         setPage(1);
         
         try {
-            // Fetch first page with larger pageSize to get more collections initially
             const response = await collectionRepository.getCollections(1, 40);
-            
             if (response.success && response.data && Array.isArray(response.data.items)) {
                 setCollections(response.data.items);
                 setHasMore(response.data.hasMore);
-                setPage(2); // Set next page to 2
+                setPage(2);
             } else {
                 setCollections([]);
                 setHasMore(false);
@@ -54,7 +50,6 @@ export const Collections: React.FC = () => {
         
         try {
             const response = await collectionRepository.getCollections(page, 20);
-            
             if (response.success && response.data && Array.isArray(response.data.items)) {
                 setCollections(prev => [...prev, ...(response.data!.items)]);
                 setHasMore(response.data.hasMore);
@@ -78,7 +73,6 @@ export const Collections: React.FC = () => {
         }
     };
 
-    // Auto-load more collections when scrolling near bottom
     useEffect(() => {
         const handleScroll = () => {
             if (window.innerHeight + document.documentElement.scrollTop >= 
@@ -95,25 +89,16 @@ export const Collections: React.FC = () => {
 
     return (
         <div className="w-full animate-slideIn">
-            <div className="mb-8 animate-fadeIn flex items-center justify-between">
-                <div>
-                    <h1 className="text-4xl font-bold text-gray-800 mb-2">Explore Collections</h1>
-                    <p className="text-gray-600">
-                        Discover curated collections from our community
-                        {collections.length > 0 && (
-                            <span className="ml-2 text-sm text-gray-500">
-                                ({collections.length} collections loaded)
-                            </span>
-                        )}
-                    </p>
-                </div>
-                <button
-                    onClick={handleCreateCollection}
-                    className="flex items-center gap-2 px-6 py-3 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all duration-300 transform hover:scale-105 shadow-lg"
-                >
-                    <Plus className="w-5 h-5" />
-                    <span className="font-medium">Create Collection</span>
-                </button>
+            <div className="mb-8 animate-fadeIn">
+                <h1 className="text-4xl font-bold text-gray-800 mb-2">Explore Collections</h1>
+                <p className="text-gray-600">
+                    Discover curated collections from our community
+                    {collections.length > 0 && (
+                        <span className="ml-2 text-sm text-gray-500">
+                            ({collections.length} collections loaded)
+                        </span>
+                    )}
+                </p>
             </div>
 
             {loading ? (
@@ -125,7 +110,7 @@ export const Collections: React.FC = () => {
                     <p className="text-gray-500 text-lg mb-4">No collections found</p>
                     <button
                         onClick={handleCreateCollection}
-                        className="px-6 py-3 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all"
+                        className="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all"
                     >
                         Create the first collection
                     </button>
@@ -137,28 +122,6 @@ export const Collections: React.FC = () => {
                             <CollectionCard key={collection.id} collection={collection} />
                         ))}
                     </div>
-
-                    {/* Load More Button or Loading Indicator */}
-                    {hasMore && (
-                        <div className="flex justify-center mt-12">
-                            {loadingMore ? (
-                                <LoadingSpinner size="md" />
-                            ) : (
-                                <button
-                                    onClick={loadMoreCollections}
-                                    className="px-8 py-3 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-all duration-300 font-medium"
-                                >
-                                    Load More Collections
-                                </button>
-                            )}
-                        </div>
-                    )}
-                    
-                    {!hasMore && collections.length > 0 && (
-                        <div className="text-center mt-8 text-gray-500">
-                            All collections loaded
-                        </div>
-                    )}
                 </>
             )}
         </div>

@@ -2,7 +2,7 @@ import React from 'react';
 
 interface AvatarProps {
   username: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
 }
 
@@ -30,7 +30,8 @@ export const Avatar: React.FC<AvatarProps> = ({ username, size = 'md', className
   const sizeClasses = {
     sm: 'w-8 h-8 text-sm',
     md: 'w-10 h-10 text-base',
-    lg: 'w-16 h-16 text-xl'
+    lg: 'w-16 h-16 text-xl',
+    xl: 'w-32 h-32 text-4xl'
   };
 
   const colorClass = getColorFromUsername(username);

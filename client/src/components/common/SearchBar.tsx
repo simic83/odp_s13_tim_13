@@ -31,7 +31,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   const debouncedSearch = useCallback(
     debounce((value: string) => {
       onSearch(value);
-    }, 500), // Increased debounce time
+    }, 500),
     [onSearch]
   );
 
@@ -78,13 +78,13 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           placeholder={placeholder}
-          className="w-full pl-12 pr-12 py-3 bg-gray-100 rounded-full text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:bg-white transition-all duration-300"
+          className="w-full pl-12 pr-12 py-3 bg-gray-100 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:bg-white transition-all duration-300"
         />
         {query && (
           <button
             type="button"
             onClick={handleClear}
-            className="absolute right-4 p-1 rounded-full hover:bg-gray-200 transition-all duration-300 group"
+            className="absolute right-4 p-1 rounded-lg hover:bg-gray-200 transition-all duration-300 group"
           >
             <svg
               className="w-4 h-4 text-gray-500 group-hover:text-gray-700 transition-colors"

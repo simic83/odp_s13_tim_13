@@ -71,7 +71,13 @@ export const PinModal: React.FC<PinModalProps> = ({
 
     const handleComment = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!user || !newComment.trim()) return;
+        if (!user) {
+            onClose(); // Close modal before redirect
+            navigate('/auth');
+            return;
+        }
+        
+        if (!newComment.trim()) return;
 
         setLoadingComment(true);
         const response = await commentRepository.createComment({
@@ -88,7 +94,11 @@ export const PinModal: React.FC<PinModalProps> = ({
     };
 
     const handleLike = async () => {
-        if (!user) return;
+        if (!user) {
+            onClose(); // Close modal before redirect
+            navigate('/auth');
+            return;
+        }
 
         if (isLiked) {
             await imageRepository.unlikeImage(image.id);
@@ -101,8 +111,21 @@ export const PinModal: React.FC<PinModalProps> = ({
         }
     };
 
+    const handleSaveClick = () => {
+        if (!user) {
+            onClose(); // Close modal before redirect
+            navigate('/auth');
+            return;
+        }
+        setShowCollectionMenu(!showCollectionMenu);
+    };
+
     const handleSaveToCollection = async (collectionId: number) => {
-        if (!user) return;
+        if (!user) {
+            onClose();
+            navigate('/auth');
+            return;
+        }
 
         const response = await imageRepository.saveImage(image.id, collectionId);
         if (response.success) {
@@ -112,7 +135,13 @@ export const PinModal: React.FC<PinModalProps> = ({
     };
 
     const handleCreateCollection = () => {
+        if (!user) {
+            onClose();
+            navigate('/auth');
+            return;
+        }
         setShowCollectionMenu(false);
+        onClose();
         navigate('/create-collection');
     };
 
@@ -121,7 +150,6 @@ export const PinModal: React.FC<PinModalProps> = ({
         navigate(`/profile/${userId}`);
     };
 
-    // ✅ normalizuj link (dodaj https:// ako fali)
     const normalizedLink = useMemo(() => {
         if (!image.link) return '';
         const l = image.link.trim();
@@ -148,11 +176,10 @@ export const PinModal: React.FC<PinModalProps> = ({
 
                     {/* Right side - Details */}
                     <div className="md:w-1/2 flex flex-col h-full">
-                        {/* Header with user info */}
-                        <div className="p-6 border-b flex items-center justify-between">
+                        {/* Header with user info - Fixed */}
+                        <div className="p-6 border-b flex items-center justify-between bg-white">
                             <div className="flex items-center gap-3">
-                                {/* Avatar - clickable */}
-                                <div 
+                                <div
                                     onClick={() => handleProfileClick(image.userId)}
                                     className="cursor-pointer"
                                 >
@@ -168,9 +195,8 @@ export const PinModal: React.FC<PinModalProps> = ({
                                         </div>
                                     )}
                                 </div>
-                                {/* Username and category */}
                                 <div>
-                                    <p 
+                                    <p
                                         onClick={() => handleProfileClick(image.userId)}
                                         className="font-semibold text-lg text-gray-900 hover:text-gray-700 cursor-pointer transition-colors"
                                     >
@@ -180,7 +206,6 @@ export const PinModal: React.FC<PinModalProps> = ({
                                 </div>
                             </div>
 
-                            {/* Owner menu - moved to the right */}
                             {isOwner && (
                                 <div className="relative">
                                     <button
@@ -225,158 +250,180 @@ export const PinModal: React.FC<PinModalProps> = ({
                             )}
                         </div>
 
-                        {/* Content */}
-                        <div className="flex-1 overflow-y-auto">
-                            {/* Title and Description */}
-                            <div className="p-6">
-                                <h2 className="text-2xl font-bold mb-2 text-gray-900">{image.title}</h2>
-                                {image.description && (
-                                    <p className="text-gray-700 mb-4">{image.description}</p>
-                                )}
+                        {/* Content - Scrollable Container */}
+                        <div className="flex-1 overflow-hidden flex flex-col">
+                            <div className="flex-1 overflow-y-auto">
+                                {/* Title and Description */}
+                                <div className="p-6">
+                                    <h2 className="text-2xl font-bold mb-2 text-gray-900">{image.title}</h2>
+                                    {image.description && (
+                                        <p className="text-gray-700 mb-4">{image.description}</p>
+                                    )}
 
-                                {/* Action buttons */}
-                                <div className="flex gap-2 mb-6">
-                                    <button
-                                        onClick={handleLike}
-                                        className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${isLiked
-                                            ? 'bg-red-500 text-white'
-                                            : 'bg-gray-100 text-gray-700 hover:bg-red-100'
-                                            }`}
-                                    >
-                                        <Heart className="w-5 h-5" fill={isLiked ? 'currentColor' : 'none'} />
-                                        <span>{image.likes + (isLiked && !image.isLiked ? 1 : !isLiked && image.isLiked ? -1 : 0)}</span>
-                                    </button>
-
-                                    <button
-                                        className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all"
-                                    >
-                                        <MessageCircle className="w-5 h-5" />
-                                        <span>{comments.length}</span>
-                                    </button>
-
-                                    <div className="relative">
+                                    {/* Action buttons */}
+                                    <div className="flex flex-wrap gap-2 mb-6">
                                         <button
-                                            onClick={() => user ? setShowCollectionMenu(!showCollectionMenu) : navigate('/auth')}
-                                            className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${isSaved
-                                                ? 'bg-green-500 text-white'
-                                                : 'bg-gray-100 text-gray-700 hover:bg-green-100'
+                                            onClick={handleLike}
+                                            className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${isLiked
+                                                ? 'bg-red-500 text-white'
+                                                : 'bg-gray-100 text-gray-700 hover:bg-red-100'
                                                 }`}
                                         >
-                                            <Bookmark className="w-5 h-5" fill={isSaved ? 'currentColor' : 'none'} />
-                                            <span>{isSaved ? 'Saved' : 'Save'}</span>
+                                            <Heart className="w-5 h-5" fill={isLiked ? 'currentColor' : 'none'} />
+                                            <span>{image.likes + (isLiked && !image.isLiked ? 1 : !isLiked && image.isLiked ? -1 : 0)}</span>
                                         </button>
 
-                                        {showCollectionMenu && (
-                                            <div className="absolute left-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-10 max-h-80 overflow-y-auto">
-                                                <p className="px-4 py-2 text-sm font-semibold text-gray-700 border-b">Save to collection</p>
+                                        <button
+                                            className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all"
+                                        >
+                                            <MessageCircle className="w-5 h-5" />
+                                            <span>{comments.length}</span>
+                                        </button>
 
-                                                <button
-                                                    onClick={handleCreateCollection}
-                                                    className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-50 text-gray-700"
-                                                >
-                                                    <Plus className="w-4 h-4" />
-                                                    Create new collection
-                                                </button>
+                                        <div className="relative">
+                                            <button
+                                                onClick={handleSaveClick}
+                                                className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${isSaved
+                                                    ? 'bg-green-500 text-white'
+                                                    : 'bg-gray-100 text-gray-700 hover:bg-green-100'
+                                                    }`}
+                                            >
+                                                <Bookmark className="w-5 h-5" fill={isSaved ? 'currentColor' : 'none'} />
+                                                <span>{isSaved ? 'Saved' : 'Save'}</span>
+                                            </button>
 
-                                                {collections.map((collection) => (
+                                            {showCollectionMenu && (
+                                                <div className="absolute left-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-10 max-h-80 overflow-y-auto">
+                                                    <p className="px-4 py-2 text-sm font-semibold text-gray-700 border-b">Save to collection</p>
+
                                                     <button
-                                                        key={collection.id}
-                                                        onClick={() => handleSaveToCollection(collection.id)}
-                                                        className="w-full flex items-start gap-2 px-4 py-2 hover:bg-gray-50 text-gray-700"
+                                                        onClick={handleCreateCollection}
+                                                        className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-50 text-gray-700"
                                                     >
-                                                        <Folder className="w-4 h-4 mt-0.5" />
-                                                        <div className="text-left">
-                                                            <p className="font-medium">{collection.name}</p>
-                                                            {collection.description && (
-                                                                <p className="text-xs text-gray-500">{collection.description}</p>
-                                                            )}
-                                                        </div>
+                                                        <Plus className="w-4 h-4" />
+                                                        Create new collection
                                                     </button>
-                                                ))}
-                                            </div>
+
+                                                    {collections.map((collection) => (
+                                                        <button
+                                                            key={collection.id}
+                                                            onClick={() => handleSaveToCollection(collection.id)}
+                                                            className="w-full flex items-start gap-2 px-4 py-2 hover:bg-gray-50 text-gray-700"
+                                                        >
+                                                            <Folder className="w-4 h-4 mt-0.5" />
+                                                            <div className="text-left">
+                                                                <p className="font-medium">{collection.name}</p>
+                                                                {collection.description && (
+                                                                    <p className="text-xs text-gray-500">{collection.description}</p>
+                                                                )}
+                                                            </div>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {normalizedLink && (
+                                            <a
+                                                href={normalizedLink}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-all"
+                                            >
+                                                <ArrowUpRight className="w-5 h-5" />
+                                                <span>Visit Link</span>
+                                            </a>
                                         )}
                                     </div>
 
-                                    {/* ✅ Visit Link — odmah desno od Save; koristi image.link */}
-                                    {normalizedLink && (
-                                        <a
-                                            href={normalizedLink}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-all"
-                                        >
-                                            <ArrowUpRight className="w-5 h-5" />
-                                            <span>Visit Link</span>
-                                        </a>
-                                    )}
-                                </div>
+                                    {/* Comments Section */}
+                                    <div className="border-t pt-4">
+                                        <h3 className="font-semibold mb-4 text-gray-900 flex items-center gap-2">
+                                            Comments
+                                            {comments.length > 0 && (
+                                                <span className="text-sm font-normal text-gray-500">({comments.length})</span>
+                                            )}
+                                        </h3>
 
-                                {/* Comments Section */}
-                                <div className="border-t pt-4">
-                                    <h3 className="font-semibold mb-4 text-gray-900">Comments</h3>
-
-                                    {/* Add comment form */}
-                                    {user && (
+                                        {/* Add comment form */}
                                         <form onSubmit={handleComment} className="flex gap-2 mb-4">
-                                            <Avatar username={user.username} size="sm" />
-                                            <div className="flex-1 relative">
-                                                <input
-                                                    type="text"
-                                                    value={newComment}
-                                                    onChange={(e) => setNewComment(e.target.value)}
-                                                    placeholder="Add a comment..."
-                                                    className="w-full pl-4 pr-12 py-2 border border-gray-300 rounded-full text-gray-700 placeholder-gray-400 focus:border-gray-500 focus:outline-none"
-                                                />
-                                                <button
-                                                    type="submit"
-                                                    disabled={!newComment.trim() || loadingComment}
-                                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-500 hover:text-gray-700 disabled:opacity-50"
-                                                >
-                                                    <Send className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        </form>
-                                    )}
-
-                                    {/* Comments list */}
-                                    <div className="space-y-4">
-                                        {comments.length === 0 && (
-                                            <p className="text-gray-500 text-center py-4">No comments yet. Be the first to comment!</p>
-                                        )}
-
-                                        {comments.map((comment) => (
-                                            <div key={comment.id} className="flex gap-3">
-                                                {/* Comment avatar - clickable */}
-                                                <div 
-                                                    onClick={() => handleProfileClick(comment.userId)}
-                                                    className="cursor-pointer flex-shrink-0"
-                                                >
-                                                    {comment.user?.profileImage ? (
-                                                        <img
-                                                            src={comment.user.profileImage}
-                                                            alt={comment.user.username}
-                                                            className="w-8 h-8 rounded-full hover:ring-2 hover:ring-gray-300 transition-all"
+                                            {user ? (
+                                                <>
+                                                    <Avatar username={user.username} size="sm" />
+                                                    <div className="flex-1 relative">
+                                                        <input
+                                                            type="text"
+                                                            value={newComment}
+                                                            onChange={(e) => setNewComment(e.target.value)}
+                                                            placeholder="Add a comment..."
+                                                            className="w-full pl-4 pr-12 py-2 border border-gray-300 rounded-full text-gray-700 placeholder-gray-400 focus:border-gray-500 focus:outline-none"
                                                         />
-                                                    ) : (
-                                                        <div className="hover:scale-105 transition-transform">
-                                                            <Avatar username={comment.user?.username || 'U'} size="sm" />
-                                                        </div>
-                                                    )}
-                                                </div>
+                                                        <button
+                                                            type="submit"
+                                                            disabled={!newComment.trim() || loadingComment}
+                                                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-500 hover:text-gray-700 disabled:opacity-50"
+                                                        >
+                                                            <Send className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                </>
+                                            ) : (
                                                 <div className="flex-1">
-                                                    <p 
-                                                        onClick={() => handleProfileClick(comment.userId)}
-                                                        className="font-medium text-sm text-gray-900 hover:text-gray-700 cursor-pointer transition-colors inline-block"
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            onClose();
+                                                            navigate('/auth');
+                                                        }}
+                                                        className="w-full px-4 py-2 border border-gray-300 rounded-full text-gray-500 hover:bg-gray-50 transition-all"
                                                     >
-                                                        {comment.user?.username}
-                                                    </p>
-                                                    <p className="text-gray-700">{comment.content}</p>
-                                                    <p className="text-xs text-gray-500 mt-1">
-                                                        {new Date(comment.createdAt).toLocaleDateString()}
-                                                    </p>
+                                                        Log in to comment
+                                                    </button>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            )}
+                                        </form>
+
+                                        {/* Comments list - Scrollable with max height */}
+                                        <div className="space-y-4 max-h-[480px] overflow-y-auto pr-2 custom-scrollbar">
+                                            {comments.length === 0 && (
+                                                <p className="text-gray-500 text-center py-8">
+                                                    No comments yet. {user ? 'Be the first to comment!' : 'Log in to be the first to comment!'}
+                                                </p>
+                                            )}
+
+                                            {comments.map((comment) => (
+                                                <div key={comment.id} className="flex gap-3">
+                                                    <div
+                                                        onClick={() => handleProfileClick(comment.userId)}
+                                                        className="cursor-pointer flex-shrink-0"
+                                                    >
+                                                        {comment.user?.profileImage ? (
+                                                            <img
+                                                                src={comment.user.profileImage}
+                                                                alt={comment.user.username}
+                                                                className="w-8 h-8 rounded-full hover:ring-2 hover:ring-gray-300 transition-all"
+                                                            />
+                                                        ) : (
+                                                            <div className="hover:scale-105 transition-transform">
+                                                                <Avatar username={comment.user?.username || 'U'} size="sm" />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p
+                                                            onClick={() => handleProfileClick(comment.userId)}
+                                                            className="font-medium text-sm text-gray-900 hover:text-gray-700 cursor-pointer transition-colors inline-block"
+                                                        >
+                                                            {comment.user?.username}
+                                                        </p>
+                                                        <p className="text-gray-700 break-words">{comment.content}</p>
+                                                        <p className="text-xs text-gray-500 mt-1">
+                                                            {new Date(comment.createdAt).toLocaleDateString()}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -384,6 +431,25 @@ export const PinModal: React.FC<PinModalProps> = ({
                     </div>
                 </div>
             </div>
+
+            {/* Custom scrollbar styles */}
+            <style>{`
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+`}</style>
+
         </div>
     );
 };

@@ -73,7 +73,7 @@ export class ImageController {
       let category = req.query.category as string | undefined;
       if (category) category = category.toLowerCase();
       const search = req.query.search as string | undefined;
-      
+
       // Extract user from token if present
       let currentUserId: number | undefined;
       const token = req.header('Authorization')?.replace('Bearer ', '');
@@ -85,7 +85,7 @@ export class ImageController {
           // Token is invalid, continue without user
         }
       }
-      
+
       const result = await this.imageService.getImages(page, limit, category, search, currentUserId);
       res.json({
         success: true,
@@ -117,14 +117,19 @@ export class ImageController {
     try {
       const userId = parseInt(req.params.userId);
       const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string || req.query.pageSize as string) || 10;
+      const limit = parseInt((req.query.limit as string) || (req.query.pageSize as string)) || 10;
       const currentUserId = (req as AuthRequest).user?.id;
+
       const result = await this.imageService.getUserImages(userId, page, limit, currentUserId);
-      res.json({ success: true, ...result });
-    } catch {
+
+      // ✅ frontend očekuje data:{ items, total, ... }
+      res.json({ success: true, data: result });
+    } catch (error) {
+      console.error('Error in getUserImages:', error);
       res.status(500).json({ success: false, error: 'Server error' });
     }
   }
+
 
   public async getImageById(req: Request, res: Response) {
     try {

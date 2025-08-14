@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Heart, MessageCircle, Bookmark } from 'lucide-react';
 import { ImageGrid } from '../components/images/ImageGrid';
 import { ImageRepository } from '../api/repositories/ImageRepository';
@@ -11,6 +12,7 @@ type SortType = 'likes' | 'comments' | 'saves';
 
 export const Popular: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const imageRepository = new ImageRepository();
   const [sortPeriod, setSortPeriod] = useState<SortPeriod>('week');
   const [selectedCard, setSelectedCard] = useState<SortType>('likes');
@@ -38,7 +40,12 @@ export const Popular: React.FC = () => {
   }, [sortPeriod, selectedCard]);
 
   const handleLike = async (id: number) => {
-    if (!user) return;
+    if (!user) {
+      // Redirect to auth page if not logged in
+      navigate('/auth');
+      return;
+    }
+    
     const image = images.find(img => img.id === id);
     if (!image) return;
 
@@ -53,8 +60,12 @@ export const Popular: React.FC = () => {
     }
   };
 
-  const handleSave = async (_id: number) => {
-    if (!user) return;
+  const handleSave = async (id: number) => {
+    if (!user) {
+      // Redirect to auth page if not logged in
+      navigate('/auth');
+      return;
+    }
     alert('Select a collection to save this pin');
   };
 
@@ -100,10 +111,11 @@ export const Popular: React.FC = () => {
           <button
             key={value}
             onClick={() => setSortPeriod(value as SortPeriod)}
-            className={`px-6 py-2 rounded-full whitespace-nowrap font-medium transition-all duration-300 transform hover:scale-105 ${sortPeriod === value
-              ? 'bg-gray-900 text-white shadow-lg'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+            className={`px-6 py-2 rounded-lg whitespace-nowrap font-medium transition-all duration-300 transform hover:scale-105 ${
+              sortPeriod === value
+                ? 'bg-gray-900 text-white shadow-lg'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
           >
             {label}
           </button>
@@ -123,7 +135,7 @@ export const Popular: React.FC = () => {
                   ? 'shadow-xl scale-105 ring-2 ring-white/40'
                   : 'shadow hover:shadow-lg'}
           `}
-              style={{ width: 360, minWidth: 0, maxWidth: '95vw' }} // malo veće, levo
+              style={{ width: 360, minWidth: 0, maxWidth: '95vw' }}
             >
               <div className={`h-full bg-gradient-to-br ${card.gradient} px-5 py-4 text-white`}>
                 <div className="flex flex-col items-start">
@@ -136,7 +148,6 @@ export const Popular: React.FC = () => {
           );
         })}
       </div>
-
 
       <div className="animate-fadeIn animation-delay-300">
         <ImageGrid

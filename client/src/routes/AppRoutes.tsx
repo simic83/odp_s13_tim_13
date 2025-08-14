@@ -30,8 +30,10 @@ export const AppRoutes: React.FC = () => {
         <Route path="collections" element={<Collections />} />
         <Route path="create" element={user ? <Create /> : <Navigate to="/auth" />} />
         <Route path="pin/:id" element={<PinDetail />} />
-        <Route path="create-collection" element={user ? <CreateCollection /> : <Navigate to="/login" />} />
+        <Route path="create-collection" element={user ? <CreateCollection /> : <Navigate to="/auth" />} />
         <Route path="collection/:id" element={<CollectionView />} />
+        {/* Protect /profile route - redirect to auth if not logged in */}
+        <Route path="profile" element={user ? <Navigate to={`/profile/${user.id}`} /> : <Navigate to="/auth" />} />
         <Route path="profile/:userId" element={<Profile />} />
         <Route path="*" element={<NotFound />} />
       </Route>
