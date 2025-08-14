@@ -384,7 +384,7 @@ export const PinModal: React.FC<PinModalProps> = ({
                                         </form>
 
                                         {/* Comments list - Scrollable with max height */}
-                                        <div className="space-y-4 max-h-[480px] overflow-y-auto pr-2 custom-scrollbar">
+                                        <div className="space-y-4 max-h-[430px] overflow-y-auto pr-2 custom-scrollbar">
                                             {comments.length === 0 && (
                                                 <p className="text-gray-500 text-center py-8">
                                                     No comments yet. {user ? 'Be the first to comment!' : 'Log in to be the first to comment!'}
