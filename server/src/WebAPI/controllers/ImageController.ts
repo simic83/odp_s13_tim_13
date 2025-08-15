@@ -98,20 +98,22 @@ export class ImageController {
   }
 
   public async getPopularImages(req: Request, res: Response) {
-    try {
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string || req.query.pageSize as string) || 10;
-      const currentUserId = (req as AuthRequest).user?.id;
-      const result = await this.imageService.getPopularImages(page, limit, currentUserId);
-      res.json({
-        success: true,
-        data: result  // Wrap in data property
-      });
-    } catch (error) {
-      console.error('Error in getPopularImages:', error);
-      res.status(500).json({ success: false, error: 'Server error' });
-    }
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string || req.query.pageSize as string) || 10;
+    const sortType = req.query.sortType as string || 'likes'; // Default to likes
+    const currentUserId = (req as AuthRequest).user?.id;
+    
+    const result = await this.imageService.getPopularImages(page, limit, sortType, currentUserId);
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    console.error('Error in getPopularImages:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
   }
+}
 
   public async getUserImages(req: Request, res: Response) {
     try {

@@ -31,15 +31,28 @@ export class CollectionRepository implements ICollectionRepository {
   async getById(id: number): Promise<Collection> {
     try {
       const query = `
-        SELECT c.*, u.username, u.profileImage as userProfileImage,
-               COUNT(i.id) as imagesCount,
-               (SELECT url FROM images WHERE collectionId = c.id ORDER BY createdAt DESC LIMIT 1) as coverImage
-        FROM collections c
-        LEFT JOIN users u ON c.userId = u.id
-        LEFT JOIN images i ON c.id = i.collectionId
-        WHERE c.id = ?
-        GROUP BY c.id
-      `;
+      SELECT c.*, u.username, u.profileImage as userProfileImage,
+             (
+               SELECT COUNT(DISTINCT imageId) 
+               FROM (
+                 SELECT id as imageId FROM images WHERE collectionId = c.id
+                 UNION
+                 SELECT imageId FROM user_saves WHERE collectionId = c.id
+               ) as all_images
+             ) as imagesCount,
+             (
+               SELECT url FROM images 
+               WHERE id IN (
+                 SELECT imageId FROM user_saves WHERE collectionId = c.id
+                 UNION
+                 SELECT id FROM images WHERE collectionId = c.id
+               )
+               ORDER BY createdAt DESC LIMIT 1
+             ) as coverImage
+      FROM collections c
+      LEFT JOIN users u ON c.userId = u.id
+      WHERE c.id = ?
+    `;
       const [rows] = await db.execute<RowDataPacket[]>(query, [id]);
 
       if (rows.length > 0) {
@@ -71,18 +84,32 @@ export class CollectionRepository implements ICollectionRepository {
     }
   }
 
+  // 2. Ispravka za getByUserId metodu:
   async getByUserId(userId: number): Promise<Collection[]> {
     try {
       const query = `
-        SELECT c.*,
-               COUNT(i.id) as imagesCount,
-               (SELECT url FROM images WHERE collectionId = c.id ORDER BY createdAt DESC LIMIT 1) as coverImage
-        FROM collections c
-        LEFT JOIN images i ON c.id = i.collectionId
-        WHERE c.userId = ?
-        GROUP BY c.id
-        ORDER BY c.createdAt DESC
-      `;
+      SELECT c.*,
+             (
+               SELECT COUNT(DISTINCT imageId) 
+               FROM (
+                 SELECT id as imageId FROM images WHERE collectionId = c.id
+                 UNION
+                 SELECT imageId FROM user_saves WHERE collectionId = c.id
+               ) as all_images
+             ) as imagesCount,
+             (
+               SELECT url FROM images 
+               WHERE id IN (
+                 SELECT imageId FROM user_saves WHERE collectionId = c.id
+                 UNION
+                 SELECT id FROM images WHERE collectionId = c.id
+               )
+               ORDER BY createdAt DESC LIMIT 1
+             ) as coverImage
+      FROM collections c
+      WHERE c.userId = ?
+      ORDER BY c.createdAt DESC
+    `;
       const [rows] = await db.execute<RowDataPacket[]>(query, [userId]);
 
       return rows.map(row => {
@@ -107,9 +134,10 @@ export class CollectionRepository implements ICollectionRepository {
     }
   }
 
+  // 3. Ispravka za getAll metodu:
   async getAll(page: number, limit: number, userId?: number): Promise<{ collections: Collection[], total: number }> {
     try {
-      // WHERE
+      // WHERE klauzula
       let whereClause = '';
       const whereParams: any[] = [];
       if (userId !== undefined && userId !== null) {
@@ -117,32 +145,43 @@ export class CollectionRepository implements ICollectionRepository {
         whereParams.push(Number(userId));
       }
 
-      // COUNT
+      // COUNT query
       const countQuery = `SELECT COUNT(*) as total FROM collections c ${whereClause}`;
       const [countRows] = await db.execute<RowDataPacket[]>(countQuery, whereParams);
       const total = Number(countRows[0]?.total ?? 0);
 
-      // PAGINACIJA — striktni brojevi
+      // Paginacija
       const pageNum = Number.isFinite(Number(page)) && Number(page) > 0 ? Number(page) : 1;
       const limitNum = Number.isFinite(Number(limit)) && Number(limit) > 0 ? Number(limit) : 20;
       const offsetNum = (pageNum - 1) * limitNum;
 
-      // GLAVNI UPIT — direktno ubaceni brojevi u LIMIT (nema placeholdera za njih!)
+      // Glavni query sa ispravkama za brojanje slika
       const dataQuery = `
-        SELECT c.*, u.username, u.profileImage as userProfileImage,
-               COUNT(i.id) as imagesCount,
-               (SELECT url FROM images WHERE collectionId = c.id ORDER BY createdAt DESC LIMIT 1) as coverImage
-        FROM collections c
-        LEFT JOIN users u ON c.userId = u.id
-        LEFT JOIN images i ON c.id = i.collectionId
-        ${whereClause}
-        GROUP BY c.id
-        ORDER BY c.createdAt DESC
-        LIMIT ${offsetNum}, ${limitNum}
-      `;
+      SELECT c.*, u.username, u.profileImage as userProfileImage,
+             (
+               SELECT COUNT(DISTINCT imageId) 
+               FROM (
+                 SELECT id as imageId FROM images WHERE collectionId = c.id
+                 UNION
+                 SELECT imageId FROM user_saves WHERE collectionId = c.id
+               ) as all_images
+             ) as imagesCount,
+             (
+               SELECT url FROM images 
+               WHERE id IN (
+                 SELECT imageId FROM user_saves WHERE collectionId = c.id
+                 UNION
+                 SELECT id FROM images WHERE collectionId = c.id
+               )
+               ORDER BY createdAt DESC LIMIT 1
+             ) as coverImage
+      FROM collections c
+      LEFT JOIN users u ON c.userId = u.id
+      ${whereClause}
+      ORDER BY c.createdAt DESC
+      LIMIT ${offsetNum}, ${limitNum}
+    `;
 
-      // ⚠️ Važno: pošto u upitu NEMA placeholdera za offset/limit,
-      // u execute prosleđujemo SAMO whereParams (npr. userId) — ništa više.
       const [rows] = await db.execute<RowDataPacket[]>(dataQuery, whereParams);
 
       const collections = rows.map(row => {

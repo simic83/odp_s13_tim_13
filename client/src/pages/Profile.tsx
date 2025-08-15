@@ -166,13 +166,13 @@ export const Profile: React.FC = () => {
           <div className="flex gap-4 justify-center">
             <button
               onClick={() => navigate('/')}
-              className="px-6 py-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all duration-300 transform hover:scale-105"
+              className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-300 transform hover:scale-105"
             >
               Go to Home
             </button>
             <button
               onClick={() => navigate('/popular')}
-              className="px-6 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-all duration-300"
+              className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all duration-300"
             >
               Explore Popular
             </button>

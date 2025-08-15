@@ -1,13 +1,13 @@
+// client/src/pages/Popular.tsx
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, MessageCircle, Bookmark, TrendingUp, Clock, Calendar, CalendarDays } from 'lucide-react';
+import { Heart, TrendingUp, Bookmark } from 'lucide-react';
 import { ImageGrid } from '../components/images/ImageGrid';
 import { ImageRepository } from '../api/repositories/ImageRepository';
 import { useAuth } from '../hooks/useAuth';
 import { Image } from '../Domain/models/Image';
 
-type SortPeriod = 'today' | 'week' | 'month' | 'year';
-type SortType = 'likes' | 'comments' | 'saves' | null;
+type SortType = 'likes' | 'trending' | 'saves';
 
 export const Popular: React.FC = () => {
   const { user } = useAuth();
@@ -19,12 +19,11 @@ export const Popular: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [sortPeriod, setSortPeriod] = useState<SortPeriod>('week');
-  const [selectedCard, setSelectedCard] = useState<SortType>(null);
+  const [selectedCard, setSelectedCard] = useState<SortType>('likes');
   const [likeLoading, setLikeLoading] = useState<number | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-  // Funkcija za učitavanje slika
+  // Funkcija za učitavanje slika - PROMENJENO da šalje sort type na backend
   const fetchImages = useCallback(async (resetImages: boolean = false) => {
     if (loading) return;
     
@@ -32,27 +31,16 @@ export const Popular: React.FC = () => {
     
     try {
       const currentPage = resetImages ? 1 : page;
-      const response = await imageRepository.getPopularImages(currentPage, 20);
+      
+      // NOVO: Pozovi različite endpoint-e ili pošalji sort parametar
+      const response = await imageRepository.getPopularImages(
+        currentPage, 
+        20,
+        selectedCard // Proslijedi sort type
+      );
       
       if (response.success && response.data) {
-        let newImages = response.data.items;
-        
-        // Primeni sortiranje na klijentskoj strani
-        if (selectedCard && newImages.length > 0) {
-          newImages = [...newImages].sort((a, b) => {
-            switch (selectedCard) {
-              case 'likes':
-                return b.likes - a.likes;
-              case 'saves':
-                return b.saves - a.saves;
-              case 'comments':
-                // Pošto nemamo broj komentara, koristi kombinaciju
-                return (b.likes + b.saves) - (a.likes + a.saves);
-              default:
-                return 0;
-            }
-          });
-        }
+        const newImages = response.data.items;
         
         if (resetImages) {
           setImages(newImages);
@@ -80,7 +68,7 @@ export const Popular: React.FC = () => {
     setPage(1);
     setHasMore(true);
     fetchImages(true);
-  }, [sortPeriod, selectedCard]);
+  }, [selectedCard]);
 
   // Funkcija za skrol (za učitavanje više slika)
   useEffect(() => {
@@ -175,9 +163,9 @@ export const Popular: React.FC = () => {
       iconFillColor: 'text-white'
     },
     {
-      type: 'comments' as SortType,
+      type: 'trending' as SortType,
       title: 'Rising Fast',
-      description: 'Trending and engaging pins',
+      description: 'Recently popular pins',
       icon: TrendingUp,
       gradient: 'from-purple-400 to-indigo-500',
       activeColor: 'bg-gradient-to-br from-purple-500 to-indigo-600',
@@ -194,53 +182,20 @@ export const Popular: React.FC = () => {
     }
   ];
 
-  const periodIcons = {
-    today: Clock,
-    week: Calendar,
-    month: CalendarDays,
-    year: CalendarDays
-  };
-
   return (
     <div className="w-full">
       {/* Naslov - animacija samo na initial load */}
       <div className={`mb-8 ${isInitialLoad ? 'animate-fadeIn' : ''}`}>
         <h1 className="text-4xl font-bold text-gray-800 mb-2">Trending Now</h1>
         <p className="text-gray-600 mb-6">
-          {selectedCard 
-            ? `Showing pins sorted by ${selectedCard === 'comments' ? 'engagement' : selectedCard}`
-            : 'Discover what everyone\'s talking about'}
+          {selectedCard === 'likes' && 'Showing the most loved pins in our community'}
+          {selectedCard === 'trending' && 'Discover what\'s gaining traction right now'}
+          {selectedCard === 'saves' && 'Explore the most saved pins across all collections'}
         </p>
       </div>
 
-      {/* Sort Period Buttons - animacija samo na initial load */}
-      <div className={`flex gap-2 mb-8 overflow-x-auto pb-2 ${isInitialLoad ? 'animate-fadeIn animation-delay-100' : ''}`}>
-        {[
-          { value: 'today', label: 'Today' },
-          { value: 'week', label: 'This Week' },
-          { value: 'month', label: 'This Month' },
-          { value: 'year', label: 'This Year' }
-        ].map(({ value, label }) => {
-          const Icon = periodIcons[value as SortPeriod];
-          return (
-            <button
-              key={value}
-              onClick={() => setSortPeriod(value as SortPeriod)}
-              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl whitespace-nowrap font-medium transition-all duration-300 transform hover:scale-105 ${
-                sortPeriod === value
-                  ? 'bg-gray-900 text-white shadow-lg scale-105'
-                  : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              {label}
-            </button>
-          );
-        })}
-      </div>
-
       {/* Sort Type Cards - animacija samo na initial load */}
-      <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 ${isInitialLoad ? 'animate-fadeIn animation-delay-200' : ''}`}>
+      <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 ${isInitialLoad ? 'animate-fadeIn animation-delay-100' : ''}`}>
         {sortCards.map((card) => {
           const Icon = card.icon;
           const isSelected = selectedCard === card.type;
@@ -248,14 +203,12 @@ export const Popular: React.FC = () => {
           return (
             <button
               key={card.type}
-              onClick={() => setSelectedCard(isSelected ? null : card.type)}
+              onClick={() => setSelectedCard(card.type)}
               className={`
                 relative overflow-hidden rounded-2xl transition-all duration-500 transform
                 ${isSelected 
                   ? `${card.activeColor} shadow-2xl scale-105 ring-4 ring-white/30` 
-                  : selectedCard && !isSelected
-                    ? 'bg-white shadow-md opacity-60 hover:opacity-80 scale-95'
-                    : 'bg-white shadow-lg hover:shadow-xl hover:scale-102'
+                  : 'bg-white shadow-lg hover:shadow-xl hover:scale-102'
                 }
               `}
             >
@@ -313,22 +266,14 @@ export const Popular: React.FC = () => {
       </div>
 
       {/* Images Grid - bez animacije osim na initial load */}
-      <div className={isInitialLoad ? 'animate-fadeIn animation-delay-300' : ''}>
-        {selectedCard && images.length > 0 && (
+      <div className={isInitialLoad ? 'animate-fadeIn animation-delay-200' : ''}>
+        {images.length > 0 && (
           <div className="mb-4 px-2">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full">
               <span className="text-sm text-gray-600">Sorted by:</span>
               <span className="text-sm font-semibold text-gray-800">
                 {sortCards.find(c => c.type === selectedCard)?.title}
               </span>
-              <button
-                onClick={() => setSelectedCard(null)}
-                className="ml-2 text-gray-500 hover:text-gray-700 transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
             </div>
           </div>
         )}

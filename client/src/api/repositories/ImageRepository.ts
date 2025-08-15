@@ -21,11 +21,12 @@ export class ImageRepository implements IImageRepository {
     }
   }
 
-  async getPopularImages(page: number, pageSize: number): Promise<ApiResponse<PaginatedResponse<Image>>> {
+  async getPopularImages(page: number, pageSize: number, sortType?: string): Promise<ApiResponse<PaginatedResponse<Image>>> {
     try {
-      const response = await axiosInstance.get('/images/popular', {
-        params: { page, pageSize }
-      });
+      const params: any = { page, pageSize };
+      if (sortType) params.sortType = sortType;
+
+      const response = await axiosInstance.get('/images/popular', { params });
       return response.data;
     } catch (error: any) {
       return {

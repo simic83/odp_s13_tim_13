@@ -3,7 +3,7 @@ import { Comment } from "../../models/Comment";
 
 export interface IImageService {
   getImages(page: number, limit: number, category?: string, search?: string, currentUserId?: number): Promise<any>;
-  getPopularImages(page: number, limit: number, currentUserId?: number): Promise<any>;
+  getPopularImages(page: number, limit: number, sortType?: string, currentUserId?: number): Promise<any>;  // UPDATED
   getUserImages(userId: number, page: number, limit: number, currentUserId?: number): Promise<any>;
   getImageById(id: number, currentUserId?: number): Promise<Image>;
   createImage(imageData: any): Promise<Image>;

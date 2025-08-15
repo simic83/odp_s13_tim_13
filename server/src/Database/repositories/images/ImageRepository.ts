@@ -36,6 +36,7 @@ export class ImageRepository implements IImageRepository {
       const query = `
         SELECT i.*, 
                (SELECT COUNT(*) FROM likes l WHERE l.imageId = i.id) as likes,
+               (SELECT COUNT(*) FROM user_saves us WHERE us.imageId = i.id) as saves,
                u.username, u.profileImage as userProfileImage,
                c.name as collectionName
         FROM images i
@@ -54,8 +55,8 @@ export class ImageRepository implements IImageRepository {
           row.description,
           row.link,
           row.category,
-          row.likes, // sada je COUNT iz likes tabele
-          row.saves,
+          row.likes,
+          row.saves, // sada je COUNT iz user_saves tabele
           row.userId,
           row.collectionId,
           row.createdAt,
@@ -104,8 +105,10 @@ export class ImageRepository implements IImageRepository {
       const query = `
         SELECT i.*, 
                (SELECT COUNT(*) FROM likes l WHERE l.imageId = i.id) as likes,
+               (SELECT COUNT(*) FROM user_saves us WHERE us.imageId = i.id) as saves,
                u.username, u.profileImage as userProfileImage
                ${userId ? ', (SELECT COUNT(*) FROM likes WHERE imageId = i.id AND userId = ?) as userLiked' : ''}
+               ${userId ? ', (SELECT COUNT(*) FROM user_saves WHERE imageId = i.id AND userId = ?) as userSaved' : ''}
         FROM images i
         LEFT JOIN users u ON i.userId = u.id
         ${whereClause}
@@ -114,7 +117,7 @@ export class ImageRepository implements IImageRepository {
       `;
 
       // Add userId to params if provided
-      const queryParams = userId ? [userId, ...params] : params;
+      const queryParams = userId ? [userId, userId, ...params] : params;
 
       const [rows] = await db.execute<RowDataPacket[]>(query, queryParams);
 
@@ -142,9 +145,10 @@ export class ImageRepository implements IImageRepository {
           };
         }
 
-        // Set isLiked if userId was provided
+        // Set isLiked and isSaved if userId was provided
         if (userId) {
           image.isLiked = row.userLiked > 0;
+          image.isSaved = row.userSaved > 0;
         }
 
         return image;
@@ -169,6 +173,7 @@ export class ImageRepository implements IImageRepository {
       const query = `
         SELECT i.*, 
                (SELECT COUNT(*) FROM likes l WHERE l.imageId = i.id) as likes,
+               (SELECT COUNT(*) FROM user_saves us WHERE us.imageId = i.id) as saves,
                u.username, u.profileImage as userProfileImage
         FROM images i
         LEFT JOIN users u ON i.userId = u.id
@@ -187,7 +192,7 @@ export class ImageRepository implements IImageRepository {
           row.description,
           row.link,
           row.category,
-          row.likes, // COUNT iz likes tabele
+          row.likes,
           row.saves,
           row.userId,
           row.collectionId,
@@ -213,26 +218,62 @@ export class ImageRepository implements IImageRepository {
     }
   }
 
-  async getPopular(page: number, limit: number): Promise<{ images: Image[], total: number }> {
+  async getPopular(page: number, limit: number, sortType: string = 'likes', userId?: number): Promise<{ images: Image[], total: number }> {
     try {
       // Get total count
       const countQuery = `SELECT COUNT(*) as total FROM images`;
       const [countRows] = await db.execute<RowDataPacket[]>(countQuery);
       const total = countRows[0].total;
 
-      // Get paginated results ordered by popularity
+      // Get paginated results with dynamic sorting
       const offset = (page - 1) * limit;
-      const query = `
-        SELECT i.*, 
-               (SELECT COUNT(*) FROM likes l WHERE l.imageId = i.id) as likes,
-               u.username, u.profileImage as userProfileImage
-        FROM images i
-        LEFT JOIN users u ON i.userId = u.id
-        ORDER BY likes DESC, i.createdAt DESC
-        LIMIT ${offset}, ${limit}
-      `;
 
-      const [rows] = await db.execute<RowDataPacket[]>(query);
+      let orderByClause = '';
+
+      switch (sortType) {
+        case 'likes':
+          // Sort by likes only
+          orderByClause = `ORDER BY (SELECT COUNT(*) FROM likes l WHERE l.imageId = i.id) DESC, i.createdAt DESC`;
+          break;
+
+        case 'saves':
+          // Sort by saves only
+          orderByClause = `ORDER BY (SELECT COUNT(*) FROM user_saves us WHERE us.imageId = i.id) DESC, i.createdAt DESC`;
+          break;
+
+        case 'trending':
+          // Formula for trending: (likes + saves*2) / (days_old + 1)
+          // This gives higher weight to newer content with engagement
+          orderByClause = `
+          ORDER BY (
+            ((SELECT COUNT(*) FROM likes l WHERE l.imageId = i.id) + 
+             (SELECT COUNT(*) FROM user_saves us WHERE us.imageId = i.id) * 2) 
+            / (DATEDIFF(NOW(), i.createdAt) + 1)
+          ) DESC, i.createdAt DESC
+        `;
+          break;
+
+        default:
+          // Default to likes
+          orderByClause = `ORDER BY (SELECT COUNT(*) FROM likes l WHERE l.imageId = i.id) DESC, i.createdAt DESC`;
+      }
+
+      const query = `
+      SELECT i.*, 
+             (SELECT COUNT(*) FROM likes l WHERE l.imageId = i.id) as likes,
+             (SELECT COUNT(*) FROM user_saves us WHERE us.imageId = i.id) as saves,
+             u.username, u.profileImage as userProfileImage
+             ${userId ? ', (SELECT COUNT(*) FROM likes WHERE imageId = i.id AND userId = ?) as userLiked' : ''}
+             ${userId ? ', (SELECT COUNT(*) FROM user_saves WHERE imageId = i.id AND userId = ?) as userSaved' : ''}
+      FROM images i
+      LEFT JOIN users u ON i.userId = u.id
+      ${orderByClause}
+      LIMIT ${offset}, ${limit}
+    `;
+
+      // Add userId to params if provided
+      const queryParams = userId ? [userId, userId] : [];
+      const [rows] = await db.execute<RowDataPacket[]>(query, queryParams);
 
       const images = rows.map(row => {
         const image = new Image(
@@ -242,7 +283,7 @@ export class ImageRepository implements IImageRepository {
           row.description,
           row.link,
           row.category,
-          row.likes, // COUNT iz likes tabele
+          row.likes,
           row.saves,
           row.userId,
           row.collectionId,
@@ -258,6 +299,12 @@ export class ImageRepository implements IImageRepository {
           };
         }
 
+        // Set isLiked and isSaved if userId was provided
+        if (userId) {
+          image.isLiked = row.userLiked > 0;
+          image.isSaved = row.userSaved > 0;
+        }
+
         return image;
       });
 
@@ -270,17 +317,23 @@ export class ImageRepository implements IImageRepository {
 
   async getByCollectionId(collectionId: number): Promise<Image[]> {
     try {
+      // Query koji uzima slike koje su sačuvane u kolekciju ILI koje su originalno kreirane u toj kolekciji
       const query = `
-        SELECT i.*, 
-               (SELECT COUNT(*) FROM likes l WHERE l.imageId = i.id) as likes,
-               u.username, u.profileImage as userProfileImage
-        FROM images i
-        LEFT JOIN users u ON i.userId = u.id
-        WHERE i.collectionId = ?
-        ORDER BY i.createdAt DESC
-        `;
+      SELECT DISTINCT i.*, 
+             (SELECT COUNT(*) FROM likes l WHERE l.imageId = i.id) as likes,
+             (SELECT COUNT(*) FROM user_saves us WHERE us.imageId = i.id) as saves,
+             u.username, u.profileImage as userProfileImage
+      FROM images i
+      LEFT JOIN users u ON i.userId = u.id
+      WHERE i.id IN (
+        SELECT imageId FROM user_saves WHERE collectionId = ?
+        UNION
+        SELECT id FROM images WHERE collectionId = ?
+      )
+      ORDER BY i.createdAt DESC
+    `;
 
-      const [rows] = await db.execute<RowDataPacket[]>(query, [collectionId]);
+      const [rows] = await db.execute<RowDataPacket[]>(query, [collectionId, collectionId]);
 
       return rows.map(row => {
         const image = new Image(
@@ -290,7 +343,7 @@ export class ImageRepository implements IImageRepository {
           row.description,
           row.link,
           row.category,
-          row.likes, // COUNT iz likes tabele
+          row.likes,
           row.saves,
           row.userId,
           row.collectionId,
@@ -352,32 +405,22 @@ export class ImageRepository implements IImageRepository {
   }
 
   async incrementLikes(id: number): Promise<boolean> {
+    // Likes se čuvaju u likes tabeli, ne u images tabeli
     return true;
   }
 
   async decrementLikes(id: number): Promise<boolean> {
+    // Likes se čuvaju u likes tabeli, ne u images tabeli
     return true;
   }
 
   async incrementSaves(id: number): Promise<boolean> {
-    try {
-      const query = `UPDATE images SET saves = saves + 1 WHERE id = ?`;
-      const [result] = await db.execute<ResultSetHeader>(query, [id]);
-      return result.affectedRows > 0;
-    } catch (error) {
-      console.error('Error incrementing saves:', error);
-      return false;
-    }
+    // Saves se čuvaju u user_saves tabeli, ne u images tabeli
+    return true;
   }
 
   async decrementSaves(id: number): Promise<boolean> {
-    try {
-      const query = `UPDATE images SET saves = GREATEST(saves - 1, 0) WHERE id = ?`;
-      const [result] = await db.execute<ResultSetHeader>(query, [id]);
-      return result.affectedRows > 0;
-    } catch (error) {
-      console.error('Error decrementing saves:', error);
-      return false;
-    }
+    // Saves se čuvaju u user_saves tabeli, ne u images tabeli
+    return true;
   }
 }
