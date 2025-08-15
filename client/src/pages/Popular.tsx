@@ -1,7 +1,7 @@
 // client/src/pages/Popular.tsx
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, TrendingUp, Bookmark } from 'lucide-react';
+import { Heart, MessageCircle, Bookmark } from 'lucide-react';
 import { ImageGrid } from '../components/images/ImageGrid';
 import { ImageRepository } from '../api/repositories/ImageRepository';
 import { useAuth } from '../hooks/useAuth';
@@ -164,9 +164,9 @@ export const Popular: React.FC = () => {
     },
     {
       type: 'trending' as SortType,
-      title: 'Rising Fast',
-      description: 'Recently popular pins',
-      icon: TrendingUp,
+      title: 'Most Commented',
+      description: 'Most discussed pins',
+      icon: MessageCircle,
       gradient: 'from-purple-400 to-indigo-500',
       activeColor: 'bg-gradient-to-br from-purple-500 to-indigo-600',
       iconFillColor: 'text-white'

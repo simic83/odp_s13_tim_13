@@ -242,15 +242,9 @@ export class ImageRepository implements IImageRepository {
           break;
 
         case 'trending':
-          // Formula for trending: (likes + saves*2) / (days_old + 1)
-          // This gives higher weight to newer content with engagement
           orderByClause = `
-          ORDER BY (
-            ((SELECT COUNT(*) FROM likes l WHERE l.imageId = i.id) + 
-             (SELECT COUNT(*) FROM user_saves us WHERE us.imageId = i.id) * 2) 
-            / (DATEDIFF(NOW(), i.createdAt) + 1)
-          ) DESC, i.createdAt DESC
-        `;
+    ORDER BY (SELECT COUNT(*) FROM comments c WHERE c.imageId = i.id) DESC, i.createdAt DESC
+  `;
           break;
 
         default:
