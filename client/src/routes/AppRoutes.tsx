@@ -10,10 +10,11 @@ import { Profile } from '../pages/Profile';
 import { NotFound } from '../pages/NotFound';
 import { Auth } from '../pages/Auth';
 import { Create } from '../pages/Create';
-import { PinDetail } from '../pages/PinDetail';
 import { CreateCollection } from '../pages/CreateCollection';
 import { Collections } from '../pages/Collections';
 import { CollectionView } from '../pages/CollectionView';
+import { EditCollection } from '../pages/EditCollection';
+import { EditPin } from '../pages/EditPin';
 
 export const AppRoutes: React.FC = () => {
   const { user } = useAuth();
@@ -29,9 +30,10 @@ export const AppRoutes: React.FC = () => {
         <Route path="popular" element={<Popular />} />
         <Route path="collections" element={<Collections />} />
         <Route path="create" element={user ? <Create /> : <Navigate to="/auth" />} />
-        <Route path="pin/:id" element={<PinDetail />} />
         <Route path="create-collection" element={user ? <CreateCollection /> : <Navigate to="/auth" />} />
         <Route path="collection/:id" element={<CollectionView />} />
+        <Route path="collection/:id/edit" element={user ? <EditCollection /> : <Navigate to="/auth" />} />
+        <Route path="edit/:id" element={user ? <EditPin /> : <Navigate to="/auth" />} />
         {/* Protect /profile route - redirect to auth if not logged in */}
         <Route path="profile" element={user ? <Navigate to={`/profile/${user.id}`} /> : <Navigate to="/auth" />} />
         <Route path="profile/:userId" element={<Profile />} />

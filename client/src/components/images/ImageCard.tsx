@@ -33,17 +33,15 @@ export const ImageCard: React.FC<ImageCardProps> = ({
   return (
     <>
       <div
-        className={`relative group cursor-pointer mb-4 break-inside-avoid transition-all duration-500 ${
-          isDeleting ? 'animate-card-delete' : ''
-        }`}
+        className={`relative group cursor-pointer mb-4 break-inside-avoid transition-all duration-500 ${isDeleting ? 'animate-card-delete' : ''
+          }`}
       >
         <div className="relative overflow-hidden rounded-2xl" onClick={handleImageClick}>
           <img
             src={image.url}
             alt={image.title}
-            className={`w-full object-cover transition-all duration-500 ${
-              isDeleting ? 'animate-image-burn' : ''
-            }`}
+            className={`w-full object-cover transition-all duration-500 ${isDeleting ? 'animate-image-burn' : ''
+              }`}
           />
 
           {/* Fire effect overlay */}

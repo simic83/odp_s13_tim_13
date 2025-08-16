@@ -5,6 +5,7 @@ import { ImageService } from '../../Services/images/ImageService';
 import { CollectionRepository } from '../../Database/repositories/collections/CollectionRepository';
 import { ImageRepository } from '../../Database/repositories/images/ImageRepository';
 import { AuthRequest, authMiddleware } from '../middlewares/AuthMiddleware';
+import db from '../../Database/connection/DbConnectionPool';
 
 export class CollectionController {
   public router: Router;
@@ -28,6 +29,7 @@ export class CollectionController {
     this.router.post('/', authMiddleware, this.createCollection);
     this.router.put('/:id', authMiddleware, this.updateCollection);
     this.router.delete('/:id', authMiddleware, this.deleteCollection);
+    this.router.delete('/:id/images/:imageId', authMiddleware, this.removeImageFromCollection);
   }
 
   // GET /api/collections?page=1&pageSize=20&userId=optional
@@ -212,6 +214,38 @@ export class CollectionController {
         message: error?.message,
         code: error?.code
       });
+      res.status(500).json({ success: false, error: 'Server error' });
+    }
+  };
+
+  removeImageFromCollection = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      if (!req.user?.id) {
+        res.status(401).json({ success: false, error: 'Unauthorized' });
+        return;
+      }
+
+      const collectionId = Number(req.params.id);
+      const imageId = Number(req.params.imageId);
+
+      // Verify ownership of collection
+      const collection = await this.collectionService.getCollectionById(String(collectionId));
+      if (!collection || collection.userId !== Number(req.user.id)) {
+        res.status(403).json({ success: false, error: 'Access denied' });
+        return;
+      }
+
+      // Remove image from collection (update image's collectionId to null)
+      const query = `UPDATE images SET collectionId = NULL WHERE id = ? AND collectionId = ?`;
+      await db.execute(query, [imageId, collectionId]);
+
+      // Also remove from user_saves if it exists
+      const deleteQuery = `DELETE FROM user_saves WHERE imageId = ? AND collectionId = ?`;
+      await db.execute(deleteQuery, [imageId, collectionId]);
+
+      res.json({ success: true, message: 'Image removed from collection' });
+    } catch (error: any) {
+      console.error('Error removing image from collection:', error);
       res.status(500).json({ success: false, error: 'Server error' });
     }
   };

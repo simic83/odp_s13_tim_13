@@ -538,7 +538,7 @@ export const PinModal: React.FC<PinModalProps> = ({
                                                                 value={newComment}
                                                                 onChange={(e) => setNewComment(e.target.value)}
                                                                 placeholder="Add a comment..."
-                                                                className="w-full pl-4 pr-12 py-2 border border-gray-300 rounded-full text-gray-700 placeholder-gray-400 focus:border-gray-500 focus:outline-none transition-all"
+                                                                className="w-full pl-4 pr-12 py-2 border border-gray-300 rounded-lg text-gray-700 placeholder-gray-400 focus:border-gray-500 focus:outline-none transition-all"
                                                             />
                                                             <button
                                                                 type="submit"

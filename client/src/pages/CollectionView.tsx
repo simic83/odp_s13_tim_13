@@ -61,7 +61,7 @@ export const CollectionView: React.FC = () => {
 
     const handleEdit = () => {
         if (!collection) return;
-        navigate(`/collection/${collection.id}/edit`);
+        navigate(`/collection/${collection.id}/edit`); // Promeniti sa `/collection/${collection.id}/edit`
     };
 
     const handleImageLike = async (imageId: number) => {

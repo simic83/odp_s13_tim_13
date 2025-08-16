@@ -213,6 +213,8 @@ export class CollectionRepository implements ICollectionRepository {
     }
   }
 
+  
+
   async update(collection: Collection): Promise<Collection> {
     try {
       const query = `
