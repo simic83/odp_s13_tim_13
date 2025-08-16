@@ -95,20 +95,11 @@ export const CollectionCard: React.FC<CollectionCardProps> = ({
           </div>
 
           {/* Category Badge - Now shows on hover */}
-          <div className={`absolute top-4 left-4 transition-all duration-500 ${
+          <div className={`absolute top-4 right-4 transition-all duration-500 ${
             isHovered ? 'translate-y-0 opacity-100' : '-translate-y-2 opacity-0'
           }`}>
             <div className="px-3 py-1.5 bg-white/20 backdrop-blur-md rounded-lg border border-white/30">
               <span className="text-xs font-medium text-white capitalize">{collection.category}</span>
-            </div>
-          </div>
-
-          {/* View Collection Button - Shows on hover */}
-          <div className={`absolute top-4 right-4 transition-all duration-500 ${
-            isHovered ? 'translate-y-0 opacity-100' : '-translate-y-2 opacity-0'
-          }`}>
-            <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-lg border border-white/30 flex items-center justify-center group-hover:bg-white/30 transition-colors">
-              <ArrowUpRight className="w-5 h-5 text-white" />
             </div>
           </div>
 
@@ -135,8 +126,6 @@ export const CollectionCard: React.FC<CollectionCardProps> = ({
         <div className={`relative bg-white transition-all duration-500 ${
           isHovered ? 'h-16 opacity-100' : 'h-0 opacity-0'
         } overflow-hidden`}>
-          {/* Animated Background on Hover */}
-          <div className={`absolute inset-0 bg-gradient-to-r ${getGradient()} opacity-5`} />
           
           <div className="relative flex items-center justify-between h-full px-4">
             {/* User Info */}
